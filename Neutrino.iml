@@ -10,6 +10,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
     </content>
     <orderEntry type="jdk" jdkName="1.6" jdkType="JavaSDK" />
@@ -17,6 +18,7 @@
     <orderEntry type="library" exported="" name="Gradle: robocode-1.8.2.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: kotlin-stdlib-0.6.1673" level="project" />
     <orderEntry type="library" exported="" name="Gradle: kotlin-runtime-0.6.1673" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="core" level="project" />
   </component>
 </module>
 
