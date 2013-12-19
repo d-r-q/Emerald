@@ -1,0 +1,63 @@
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: "kotlin"
+
+version = '0.0'
+
+buildscript {
+    ext.kotlin_version = '0.6.1673'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:0.6.1673'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$ext.kotlin_version"
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:0.6.1673'
+    compile files('lib/robocode-1.8.2.0.jar')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$ext.kotlin_version"
+}
+
+task generateProperties {
+
+    def violetProperties = file("${sourceSets.main.output.classesDir}/lxx/${project.name}.properties")
+    if (!violetProperties.exists()) {
+        violetProperties.getParentFile().mkdirs()
+    }
+    def vpWriter = violetProperties.newWriter()
+    vpWriter << "robot.description=\n"
+    vpWriter << "robocode.version=1.8\n"
+    vpWriter << "robot.java.source.included=true\n"
+    vpWriter << "robot.version=${project.version}\n"
+    vpWriter << "robot.author.name=Aleksey Zhidkov\n"
+    vpWriter << "robot.classname=lxx.${project.name}\n"
+    vpWriter << "robot.name=${project.name}\n"
+    vpWriter.flush()
+    vpWriter.close()
+}
+
+
+processResources.doFirst {
+    from(zipTree("lib/kotlin-runtime.jar"))
+
+    project.copy {
+        from(sourceSets.main.java)
+        into(sourceSets.main.output.classesDir)
+
+        from(sourceSets.main.kotlin)
+        into(sourceSets.main.output.classesDir)
+
+    }
+}
+
+processResources.dependsOn generateProperties
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
