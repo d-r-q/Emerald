@@ -36,6 +36,7 @@ class BattleStateFactory(log: Log, private val myName: String) {
                             newX = event.getX(),
                             newY = event.getY(),
                             newHeading = event.getHeadingRadians(),
+                            newGunHeading = event.getGunHeadingRadians(),
                             newRadarHeading = event.getRadarHeadingRadians()
                     )
                     time = event.getTime()
@@ -49,8 +50,7 @@ class BattleStateFactory(log: Log, private val myName: String) {
                             newLastScanTime = event.getTime(),
                             newX = enemyNewPos.x,
                             newY = enemyNewPos.y,
-                            newHeading = event.getHeadingRadians(),
-                            newRadarHeading = java.lang.Double.NaN
+                            newHeading = event.getHeadingRadians()
                     )
                 }
 

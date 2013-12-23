@@ -7,6 +7,7 @@ data class LxxRobot(
         val x: Double,
         val y: Double,
         val heading: Double,
+        val gunHeading: Double,
         val radarHeading: Double
         ) : PointLike {
 
@@ -22,6 +23,7 @@ fun LxxRobotBuilder(prevState: LxxRobot) = LxxRobotBuilder(
         prevState.x,
         prevState.y,
         prevState.heading,
+        prevState.gunHeading,
         prevState.radarHeading
 )
 
@@ -32,6 +34,7 @@ data class LxxRobotBuilder(
         var x: Double = java.lang.Double.NaN,
         var y: Double = java.lang.Double.NaN,
         var heading: Double = java.lang.Double.NaN,
+        var gunHeading: Double = java.lang.Double.NaN,
         var radarHeading: Double = java.lang.Double.NaN
 ) : PointLike {
 
@@ -41,6 +44,7 @@ data class LxxRobotBuilder(
              newX: Double = x,
              newY: Double = y,
              newHeading: Double = heading,
+             newGunHeading: Double = gunHeading,
              newRadarHeading: Double = radarHeading) {
 
         name = newName
@@ -49,10 +53,11 @@ data class LxxRobotBuilder(
         x = newX
         y = newY
         heading = newHeading
+        gunHeading = newGunHeading
         radarHeading = newRadarHeading
     }
 
-    fun build() = LxxRobot(name, alive, lastScanTime, x, y, heading, radarHeading)
+    fun build() = LxxRobot(name, alive, lastScanTime, x, y, heading, gunHeading, radarHeading)
 
     override fun x() = x
     override fun y() = y
