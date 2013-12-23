@@ -3,6 +3,9 @@ apply plugin: 'kotlin'
 apply plugin: "kotlin"
 
 version = '0.0'
+group = 'lxx'
+
+jar.archiveName = "${group}.${name}_${version}.jar"
 
 buildscript {
     ext.kotlin_version = '0.6.1673'
