@@ -22,7 +22,7 @@ dependencies {
     compile files('lib/robocode-1.8.2.0.jar')
     compile "org.jetbrains.kotlin:kotlin-stdlib:$ext.kotlin_version"
 
-    testRuntime 'junit:junit:4.11'
+    testCompile 'junit:junit:4.11'
 }
 
 task generateProperties {
@@ -60,4 +60,11 @@ processResources.doFirst {
 processResources.dependsOn generateProperties
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
+}
+
+task release(dependsOn: ':build') {
+    copy {
+        from(jar.archivePath)
+        into("builds")
+    }
 }

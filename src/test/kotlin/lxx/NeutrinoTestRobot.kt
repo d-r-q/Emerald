@@ -1,15 +1,14 @@
 package lxx
 
 import java.awt.Color
+import java.util.concurrent.CyclicBarrier
 
-class NeutrinoTestRobot : Neutrino() {
+class NeutrinoTestRobot(val barrier: CyclicBarrier) : Neutrino() {
 
     var setTurnRadarRightCalled = false
 
     override fun execute() {
-        synchronized (this) {
-            wait()
-        }
+        barrier.await()
     }
 
     override fun getBattleFieldWidth() = 800.0
@@ -40,5 +39,11 @@ class NeutrinoTestRobot : Neutrino() {
 
     override fun setTurnRadarRightRadians(degrees: Double) {
         setTurnRadarRightCalled = true
+    }
+
+    override fun setTurnRightRadians(radians: Double) {
+    }
+
+    override fun setTurnGunRightRadians(radians: Double) {
     }
 }
