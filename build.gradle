@@ -10,7 +10,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:0.6.1673'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$ext.kotlin_version"
     }
 }
@@ -20,9 +19,10 @@ repositories {
 }
 
 dependencies {
-    compile 'org.jetbrains.kotlin:kotlin-stdlib:0.6.1673'
     compile files('lib/robocode-1.8.2.0.jar')
     compile "org.jetbrains.kotlin:kotlin-stdlib:$ext.kotlin_version"
+
+    testRuntime 'junit:junit:4.11'
 }
 
 task generateProperties {
