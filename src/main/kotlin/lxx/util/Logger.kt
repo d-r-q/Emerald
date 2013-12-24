@@ -18,7 +18,7 @@ object Logger {
 
     fun log(level: LogLevel, message: () -> String, ex: Throwable? = null) {
         if (level.intLevel >= this.level.intLevel) {
-            println(message)
+            println(message())
             ex?.printStackTrace()
         }
     }

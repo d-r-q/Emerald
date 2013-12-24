@@ -4,6 +4,10 @@ import java.lang.Double as JDouble
 import robocode.RobotStatus
 import robocode.ScannedRobotEvent
 import robocode.StatusEvent
+import lxx.model.BattleField
+import lxx.model.BattleRules
+
+val stdRules = BattleRules(BattleField(18.0, 18.0, 764.0, 564.0), 36.0, 36.0, 0.1, 3.0, "")
 
 fun RobotStatus(
         energy: Double = JDouble.NaN,

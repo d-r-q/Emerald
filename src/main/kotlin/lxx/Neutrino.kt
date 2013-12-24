@@ -13,12 +13,27 @@ import lxx.strategy.TurnDecision
 import robocode.DeathEvent
 import robocode.ScannedRobotEvent
 import lxx.strategy.DuelStrategy
+import java.util.ArrayList
+import lxx.strategy.Strategy
+import lxx.strategy.WinStrategy
+import robocode.BulletHitEvent
+import robocode.BulletHitBulletEvent
+import robocode.BulletMissedEvent
+import robocode.HitByBulletEvent
+import robocode.HitRobotEvent
+import robocode.HitWallEvent
+import robocode.RobotDeathEvent
+import robocode.WinEvent
+import robocode.RoundEndedEvent
+import robocode.BattleEndedEvent
+import robocode.SkippedTurnEvent
+import java.awt.event.KeyEvent
 
 open class Neutrino : AdvancedRobot() {
 
     private var battleRules: BattleRules = BattleRules(BattleField(0.0, 0.0, 0.0, 0.0), 0.0, 0.0, 0.0, 0.0, "")
 
-    private val strategies = listOf(FindEnemyStrategy(), DuelStrategy())
+    private val strategies: ArrayList<Strategy> = arrayListOf(FindEnemyStrategy())
 
     private val log = Log()
 
@@ -28,13 +43,13 @@ open class Neutrino : AdvancedRobot() {
             return
         }
 
-        setColors(Color(0, 0, 0), Color(255, 255, 150), Color(0, 0, 0), Color(255, 255, 255), Color(255, 255, 255))
+        setColors(Color(2, 1, 0), Color(0xFF, 0xC1, 0x25), Color(0, 0, 0), Color(255, 255, 255), Color(255, 255, 255))
         setAdjustGunForRobotTurn(true)
         setAdjustRadarForGunTurn(true)
 
         val eventsSource = log.getEventsSource { it is ScannedRobotEvent }
 
-        val battleStateFactory = BattleStateFactory(log, getName()!!)
+        val battleStateFactory = BattleStateFactory(log, getName()!!, battleRules)
 
         while (!eventsSource.hasNext()) {
             setTurnRightRadians(java.lang.Double.POSITIVE_INFINITY)
@@ -47,6 +62,9 @@ open class Neutrino : AdvancedRobot() {
             val newState = battleStateFactory.getNewState()
             if (!newState.me.alive) {
                 break
+            }
+            if (!newState.enemy.alive && newState.me.heading == 0.0 && newState.me.gunHeading == 0.0 && newState.me.radarHeading == 0.0) {
+                setColors(Color.BLACK, Color.BLACK, Color.BLACK)
             }
 
             val strategy = strategies.find { it.matches(newState) }
@@ -93,6 +111,8 @@ open class Neutrino : AdvancedRobot() {
         if (battleRules.robotWidth == 0.0) {
             val battleField = BattleField(getWidth() / 2, getHeight() / 2, getBattleFieldWidth() - getWidth(), getBattleFieldHeight() - getHeight())
             battleRules = BattleRules(battleField, getWidth(), getHeight(), getGunCoolingRate(), getEnergy(), getName() as String)
+            strategies.add(DuelStrategy(battleField))
+            strategies.add(WinStrategy())
         }
 
         log.pushEvent(e!!.getStatus()!!)
@@ -101,5 +121,43 @@ open class Neutrino : AdvancedRobot() {
 
     override fun onDeath(event: DeathEvent?) {
         log.pushEvent(event!!)
+    }
+
+
+    override fun onBulletHit(event: BulletHitEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onBulletHitBullet(event: BulletHitBulletEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onBulletMissed(event: BulletMissedEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onHitByBullet(event: HitByBulletEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onHitRobot(event: HitRobotEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onHitWall(event: HitWallEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onRobotDeath(event: RobotDeathEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onWin(event: WinEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onRoundEnded(event: RoundEndedEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onBattleEnded(event: BattleEndedEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onSkippedTurn(event: SkippedTurnEvent?) {
+        log.pushEvent(event!!)
+    }
+    override fun onKeyTyped(e: KeyEvent?) {
+        log.pushEvent(e!!)
     }
 }

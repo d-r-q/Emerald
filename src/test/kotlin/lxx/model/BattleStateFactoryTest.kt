@@ -5,13 +5,14 @@ import lxx.events.Log
 import lxx.RobotStatus
 import lxx.math.*
 import kotlin.test.assertTrue
+import lxx.stdRules
 
 class BattleStateFactoryTest {
 
     [Test]
     fun testBattleStateFactory() {
         val log = Log()
-        val battleStateFactory = BattleStateFactory(log, "")
+        val battleStateFactory = BattleStateFactory(log, "", stdRules)
         log.pushEvent(RobotStatus(x = 0.0, y = 0.0, time = 0L, bodyHeading = RADIANS_90, radarHeading = RADIANS_90))
         val newState = battleStateFactory.getNewState()
         assertTrue(newState.me.x == 0.0)

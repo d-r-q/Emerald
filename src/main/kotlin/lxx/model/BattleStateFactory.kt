@@ -9,7 +9,7 @@ import robocode.ScannedRobotEvent
 
 import java.lang.Double as JDouble
 
-class BattleStateFactory(log: Log, private val myName: String) {
+class BattleStateFactory(log: Log, private val myName: String, private val rules: BattleRules) {
 
     private val filter: (Any) -> Boolean = {
         it is Event || it is RobotStatus
@@ -37,7 +37,8 @@ class BattleStateFactory(log: Log, private val myName: String) {
                             newY = event.getY(),
                             newHeading = event.getHeadingRadians(),
                             newGunHeading = event.getGunHeadingRadians(),
-                            newRadarHeading = event.getRadarHeadingRadians()
+                            newRadarHeading = event.getRadarHeadingRadians(),
+                            newGunHeat = event.getGunHeat()
                     )
                     time = event.getTime()
                 }
@@ -55,7 +56,12 @@ class BattleStateFactory(log: Log, private val myName: String) {
                 }
 
                 is DeathEvent -> {
-                    myNewState.with(newAlive = false)
+                    myNewState.with(newAlive = false, newLastScanTime = event.getTime())
+                    time = event.getTime()
+                }
+
+                is RobotDeathEvent -> {
+                    enemyNewState.with(newAlive = false, newLastScanTime = event.getTime())
                     time = event.getTime()
                 }
             }
@@ -69,6 +75,6 @@ class BattleStateFactory(log: Log, private val myName: String) {
         assert(enemyPrevState.x != JDouble.NaN)
         assert(enemyPrevState.y != JDouble.NaN)
 
-        return BattleState(time, myPrevState, enemyPrevState)
+        return BattleState(rules, time, myPrevState, enemyPrevState)
     }
 }

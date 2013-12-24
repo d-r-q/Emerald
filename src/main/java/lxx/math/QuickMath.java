@@ -1,7 +1,5 @@
 package lxx.math;
 
-import java.awt.*;
-
 public final class QuickMath {
 
     public static final double PI = 3.1415926535897932384626433832795D;

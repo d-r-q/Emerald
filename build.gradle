@@ -5,7 +5,7 @@ apply plugin: "kotlin"
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
-version = '0.1'
+version = '0.2'
 group = 'lxx'
 
 jar.archiveName = "${group}.${name}_${version}.jar"
@@ -77,11 +77,4 @@ jar.dependsOn copyKotlinRuntime
 
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
-}
-
-task release(dependsOn: ':build') {
-    copy {
-        from(jar.archivePath)
-        into("builds")
-    }
 }
