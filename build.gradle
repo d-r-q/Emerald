@@ -2,6 +2,9 @@ apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: "kotlin"
 
+targetCompatibility = '1.6'
+sourceCompatibility = '1.6'
+
 version = '0.1'
 group = 'lxx'
 
@@ -28,11 +31,12 @@ dependencies {
     testCompile 'junit:junit:4.11'
 }
 
-task generateProperties {
+task generateProperties
+generateProperties << {
 
-    def violetProperties = file("${sourceSets.main.output.classesDir}/lxx/${project.name}.properties")
-    if (!violetProperties.exists()) {
-        violetProperties.getParentFile().mkdirs()
+    def violetProperties = file("${sourceSets.main.output.classesDir}\\lxx\\${project.name}.properties")
+    if (!violetProperties.parentFile.exists()) {
+        violetProperties.parentFile.mkdirs()
     }
     def vpWriter = violetProperties.newWriter()
     vpWriter << "robot.description=\n"
@@ -46,9 +50,16 @@ task generateProperties {
     vpWriter.close()
 }
 
+task copyKotlinRuntime
+copyKotlinRuntime << {
+    project.copy {
+        from(zipTree("lib/kotlin-runtime.jar"))
+        into(sourceSets.main.output.classesDir)
+    }
+}
 
-processResources.doFirst {
-    from(zipTree("lib/kotlin-runtime.jar"))
+task copySources
+copySources << {
 
     project.copy {
         from(sourceSets.main.java)
@@ -60,7 +71,10 @@ processResources.doFirst {
     }
 }
 
-processResources.dependsOn generateProperties
+jar.dependsOn generateProperties
+jar.dependsOn copySources
+jar.dependsOn copyKotlinRuntime
+
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
 }
