@@ -70,7 +70,7 @@ data class LxxRobotBuilder(
 
         name = newName
         alive = newAlive
-        energy = energy
+        energy = newEnergy
         time = newTime
         lastScanTime = newLastScanTime
         x = newX

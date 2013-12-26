@@ -37,8 +37,13 @@ import lxx.paint.Canvas
 import lxx.paint.LxxGraphics
 import java.awt.Graphics2D
 import robocode.PaintEvent
+import lxx.math.QuickMath
 
 open class Neutrino : AdvancedRobot() {
+
+    {
+        QuickMath.init()
+    }
 
     private var allEvents: ArrayList<Event> = arrayListOf()
 
