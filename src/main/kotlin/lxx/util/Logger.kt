@@ -10,7 +10,7 @@ enum class LogLevel(val intLevel: Int) {
 
 object Logger {
 
-    var level = LogLevel.DEBUG
+    var level = LogLevel.OFF
 
     fun debug(message: () -> String, ex: Throwable? = null) {
         log(LogLevel.DEBUG, message, ex)

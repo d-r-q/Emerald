@@ -18,27 +18,42 @@ data class BattleField(
     private val availableLeftX = x
     private val availableRightX = x + width
 
-    private val availableLeftBottom = LxxPoint(availableLeftX, availableBottomY)
-    private val availableLeftTop = LxxPoint(availableLeftX, availableTopY)
-    private val availableRightTop = LxxPoint(availableRightX, availableTopY)
-    private val availableRightBottom = LxxPoint(availableRightX, availableBottomY)
-
-
-    private val top = Wall(WallType.TOP, RADIANS_0, RADIANS_270, RADIANS_90, availableLeftTop, availableRightTop)
-    private val right = Wall(WallType.RIGHT, RADIANS_90, RADIANS_0, RADIANS_180, availableRightTop, availableRightBottom)
-    private val bottom = Wall(WallType.BOTTOM, RADIANS_180, RADIANS_90, RADIANS_270, availableRightBottom, availableLeftBottom)
-    private val left = Wall(WallType.LEFT, RADIANS_270, RADIANS_180, RADIANS_360, availableLeftBottom, availableLeftTop)
-
-    private val bottomY = 0
-    private val topY = y * 2 + height
-    private val leftX = 0
-    private val rightX = x * 2 + width
-    private val leftTop = LxxPoint(leftX.toDouble(), topY.toDouble())
-    private val rightTop = LxxPoint(rightX.toDouble(), topY.toDouble())
-    private val rightBottom = LxxPoint(rightX.toDouble(), bottomY.toDouble())
-
     private val noSmoothX = IntervalDouble(WALL_STICK.toDouble(), width - WALL_STICK)
     private val noSmoothY = IntervalDouble(WALL_STICK.toDouble(), height - WALL_STICK)
+
+    private val top: Wall
+    private val right: Wall
+    private val bottom: Wall
+    private val left: Wall
+
+    private val leftTop: LxxPoint
+    private val rightTop: LxxPoint
+    private val rightBottom: LxxPoint
+
+    val center: LxxPoint
+
+    {
+        val availableLeftBottom = LxxPoint(availableLeftX, availableBottomY)
+        val availableLeftTop = LxxPoint(availableLeftX, availableTopY)
+        val availableRightTop = LxxPoint(availableRightX, availableTopY)
+        val availableRightBottom = LxxPoint(availableRightX, availableBottomY)
+
+        top = Wall(WallType.TOP, RADIANS_0, RADIANS_270, RADIANS_90, availableLeftTop, availableRightTop)
+        right = Wall(WallType.RIGHT, RADIANS_90, RADIANS_0, RADIANS_180, availableRightTop, availableRightBottom)
+        bottom = Wall(WallType.BOTTOM, RADIANS_180, RADIANS_90, RADIANS_270, availableRightBottom, availableLeftBottom)
+        left = Wall(WallType.LEFT, RADIANS_270, RADIANS_180, RADIANS_360, availableLeftBottom, availableLeftTop)
+
+        val bottomY = 0
+        val topY = y * 2 + height
+        val leftX = 0
+        val rightX = x * 2 + width
+
+        leftTop = LxxPoint(leftX.toDouble(), topY.toDouble())
+        rightTop = LxxPoint(rightX.toDouble(), topY.toDouble())
+        rightBottom = LxxPoint(rightX.toDouble(), bottomY.toDouble())
+
+        center = LxxPoint(rightX / 2, topY / 2)
+    }
 
     // this method is called very often, so keep it optimal
     public fun getWall(pos: PointLike, heading: Double): Wall {

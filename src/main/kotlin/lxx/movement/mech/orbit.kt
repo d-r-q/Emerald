@@ -9,49 +9,36 @@ import lxx.math.*
 
 public enum class OrbitDirection(val direction: Int, val speed: Int) {
 
-    CLOCKWISE : OrbitDirection(1, 8)
-    COUNTER_CLOCKWISE : OrbitDirection(-1, 8)
+    CLOCKWISE : OrbitDirection(1, 24)
+    COUNTER_CLOCKWISE : OrbitDirection(-1, 24)
     STOP : OrbitDirection(0, 0)
 
 }
 
-public class OrbitalMovement(val battleField: BattleField, val desiredDistance: Double) {
+public data class OrbitDestination(val center: PointLike, val direction: OrbitDirection)
 
-    public fun getMovementDecision(me: LxxRobot, center: PointLike, direction: OrbitDirection, minAttackAngle: Double): MovementDecision {
+public class OrbitalMovementMech(val battleField: BattleField, val desiredDistance: Double) : MovementMechanics<OrbitDestination> {
+
+    public override fun getMovementDecision(me: LxxRobot, destination: OrbitDestination): MovementDecision {
         val desiredHeading: Double
         val smoothedHeading: Double
-        if (direction.speed != 0) {
-            desiredHeading = getDesiredHeading(me, center, direction, minAttackAngle)
-            smoothedHeading = battleField.smoothWalls(me, desiredHeading, direction.direction == 1)
+        if (destination.direction.speed != 0) {
+            desiredHeading = getDesiredHeading(me, destination)
+            smoothedHeading = battleField.smoothWalls(me, desiredHeading, destination.direction.direction == 1)
         } else {
-            desiredHeading = normalAbsoluteAngle(center.angleTo(me) + RADIANS_90)
+            desiredHeading = normalAbsoluteAngle(destination.center.angleTo(me) + RADIANS_90)
             smoothedHeading = desiredHeading
         }
-        return toMovementDecision(me, direction.speed, smoothedHeading)
+        return toMovementDecision(me, destination.direction.speed.toDouble(), smoothedHeading)
     }
 
-    private fun toMovementDecision(robot: LxxRobot, desiredSpeed: Int, desiredHeading: Double): MovementDecision {
-        val wantToGoFront = anglesDiff(robot.heading, desiredHeading) < RADIANS_90
-        val normalizedDesiredHeading =
-                (if (wantToGoFront) desiredHeading
-                else normalAbsoluteAngle(desiredHeading + RADIANS_180)
-                )
-
-        val turnRemaining = normalRelativeAngle(normalizedDesiredHeading - robot.heading)
-        val direction = desiredSpeed *
-                (if (wantToGoFront) 1
-                else -1).toDouble()
-
-        return MovementDecision(direction, turnRemaining)
-    }
-
-    private fun getDesiredHeading(me: LxxRobot, center: PointLike, direction: OrbitDirection, minAttackAngle: Double): Double {
-        val distanceBetween = me.distance(center)
+    private fun getDesiredHeading(me: LxxRobot, destination: OrbitDestination): Double {
+        val distanceBetween = me.distance(destination.center)
         val distanceDiff = distanceBetween - desiredDistance
         val attackAngleKoeff = distanceDiff / desiredDistance
         val attackAngle = RADIANS_90 + (RADIANS_90 * attackAngleKoeff)
-        val angleToMe = angle(center.x(), center.y(), me.x, me.y)
-        return normalAbsoluteAngle(angleToMe + limit(minAttackAngle, attackAngle, RADIANS_100) * direction.direction)
+        val angleToMe = angle(destination.center.x(), destination.center.y(), me.x, me.y)
+        return normalAbsoluteAngle(angleToMe + attackAngle * destination.direction.direction)
     }
 
 }

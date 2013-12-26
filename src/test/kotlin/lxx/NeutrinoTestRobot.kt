@@ -27,7 +27,6 @@ class NeutrinoTestRobot(val barrier: CyclicBarrier) : Neutrino() {
 
     override fun getOthers() = 1
 
-
     override fun setColors(bodyColor: Color?, gunColor: Color?, radarColor: Color?, bulletColor: Color?, scanArcColor: Color?) {
     }
 
@@ -37,7 +36,7 @@ class NeutrinoTestRobot(val barrier: CyclicBarrier) : Neutrino() {
     override fun setAdjustRadarForGunTurn(independent: Boolean) {
     }
 
-    override fun setTurnRadarRightRadians(degrees: Double) {
+    override fun setTurnRadarRightRadians(radians: Double) {
         setTurnRadarRightCalled = true
     }
 
@@ -46,4 +45,5 @@ class NeutrinoTestRobot(val barrier: CyclicBarrier) : Neutrino() {
 
     override fun setTurnGunRightRadians(radians: Double) {
     }
+
 }

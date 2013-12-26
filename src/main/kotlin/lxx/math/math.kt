@@ -5,6 +5,8 @@ import java.awt.geom.Point2D
 import java.lang.Math.*
 import robocode.util.Utils.*
 
+val EPSILON = 0.0001
+
 val RADIANS_0 = Math.toRadians(0.0)
 val RADIANS_4 = Math.toRadians(4.0)
 val RADIANS_10 = Math.toRadians(10.0)

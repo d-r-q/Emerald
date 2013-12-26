@@ -8,17 +8,17 @@ import robocode.DeathEvent
 import robocode.ScannedRobotEvent
 
 import java.lang.Double as JDouble
+import lxx.events.FireEvent
+import robocode.StatusEvent
 
-class BattleStateFactory(log: Log, private val myName: String, private val rules: BattleRules) {
+class BattleStateFactory(log: Log, private val battleRules: BattleRules) {
 
-    private val filter: (Any) -> Boolean = {
-        it is Event || it is RobotStatus
-    }
+    private val filter: (Any) -> Boolean = { it is Event }
 
     private val eventsSource = log.getEventsSource(filter)
 
-    private var myPrevState = LxxRobotBuilder().build()
-    private var enemyPrevState = LxxRobotBuilder().build()
+    private var myPrevState = LxxRobotBuilder().build(battleRules)
+    private var enemyPrevState = LxxRobotBuilder().build(battleRules)
 
     fun getNewState(): BattleState {
 
@@ -29,16 +29,20 @@ class BattleStateFactory(log: Log, private val myName: String, private val rules
         for (event in eventsSource) {
             when (event) {
 
-                is RobotStatus -> {
+                is StatusEvent -> {
+                    val status = event.getStatus()!!
                     myNewState.with(
-                            newName = myName,
+                            newEnergy = status.getEnergy(),
+                            newName = battleRules.myName,
+                            newTime = event.getTime(),
                             newLastScanTime = event.getTime(),
-                            newX = event.getX(),
-                            newY = event.getY(),
-                            newHeading = event.getHeadingRadians(),
-                            newGunHeading = event.getGunHeadingRadians(),
-                            newRadarHeading = event.getRadarHeadingRadians(),
-                            newGunHeat = event.getGunHeat()
+                            newX = status.getX(),
+                            newY = status.getY(),
+                            newVelocity = status.getVelocity(),
+                            newHeading = status.getHeadingRadians(),
+                            newGunHeading = status.getGunHeadingRadians(),
+                            newRadarHeading = status.getRadarHeadingRadians(),
+                            newGunHeat = status.getGunHeat()
                     )
                     time = event.getTime()
                 }
@@ -46,35 +50,36 @@ class BattleStateFactory(log: Log, private val myName: String, private val rules
                 is ScannedRobotEvent -> {
                     val enemyNewPos = myNewState.project(myNewState.heading + event.getBearingRadians(), event.getDistance())
                     enemyNewState.with(
+                            newEnergy = event.getEnergy(),
                             newName = event.getName()!!,
                             newAlive = true,
+                            newTime = event.getTime(),
                             newLastScanTime = event.getTime(),
                             newX = enemyNewPos.x,
                             newY = enemyNewPos.y,
+                            newVelocity = event.getVelocity(),
                             newHeading = event.getHeadingRadians()
                     )
                 }
 
-                is DeathEvent -> {
-                    myNewState.with(newAlive = false, newLastScanTime = event.getTime())
-                    time = event.getTime()
+                is FireEvent -> {
+                    myNewState.with(newFirePower = event.bullet?.getPower())
                 }
 
-                is RobotDeathEvent -> {
-                    enemyNewState.with(newAlive = false, newLastScanTime = event.getTime())
-                    time = event.getTime()
-                }
+                is DeathEvent -> myNewState.with(newAlive = false, newLastScanTime = event.getTime())
+
+                is RobotDeathEvent -> enemyNewState.with(newAlive = false, newTime = event.getTime(), newLastScanTime = event.getTime())
             }
         }
 
         assert(time >= 0)
 
-        myPrevState = myNewState.build()
-        enemyPrevState = enemyNewState.build()
+        myPrevState = myNewState.build(battleRules)
+        enemyPrevState = enemyNewState.build(battleRules)
 
         assert(enemyPrevState.x != JDouble.NaN)
         assert(enemyPrevState.y != JDouble.NaN)
 
-        return BattleState(rules, time, myPrevState, enemyPrevState)
+        return BattleState(battleRules, time, myPrevState, enemyPrevState)
     }
 }

@@ -6,7 +6,8 @@ data class BattleRules (
         val robotHeight: Double,
         val gunCoolingRate: Double,
         val initialEnergy: Double,
-        val myName: String
+        val myName: String,
+        val enemyName: String
 ) {
     val initialGunHeat = 3
 }
