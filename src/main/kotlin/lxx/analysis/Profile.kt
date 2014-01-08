@@ -26,6 +26,7 @@ class Profile(
 
     public fun getBestBearingOffset(): Double {
         val zeroOffsetIdx = data.size / 2
+        [suppress("UNUSED_VARIABLE")]
         val bestIdxPair = smoothedData.withIndices().maxBy {
             val (idx, score) = it
             score
@@ -39,11 +40,12 @@ class Profile(
 
     private fun toIdx(bearingOffset: Double): Int {
 
-        val idx = Math.floor((bearingOffset - minBearingOffset) / (maxBearingOffset - minBearingOffset) * data.size).toInt()
+        val idx = Math.round((bearingOffset - minBearingOffset) / (maxBearingOffset - minBearingOffset) * (data.size - 1)).toInt()
         assert(idx >= 0, "Idx is less than 0, bearingOffset=$bearingOffset, " +
         "data.size=${data.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset")
         assert(idx < data.size, "Idx is less than 0, bearingOffset=$bearingOffset, " +
         "data.size=${data.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset")
+
         return idx
     }
 

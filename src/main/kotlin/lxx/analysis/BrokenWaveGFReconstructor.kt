@@ -25,6 +25,8 @@ class BrokenWaveGFReconstructor(
 
     [suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")]
     override fun reconstruct(battleState: BattleState, guessFactor: Double, bulletSpeed: Double): Double {
+        assert(guessFactor >= 0.0 && guessFactor <= 1.0, "Guess factor = $guessFactor")
+
         val attacker = battleState.robotByName(observerName)
         val victim = battleState.robotByName(observableName)
         val maxEscapeAngle = getMaxEscapeAngle(attacker, victim, bulletSpeed)
@@ -39,7 +41,7 @@ class BrokenWaveGFReconstructor(
         "mea.length=${maxEscapeAngle.length()}, mea.forward=${maxEscapeAngle.forward}, mea.backward=${maxEscapeAngle.backward}, " +
         "zeroOffset=$zeroOffset")
 
-        return bearingOffset
+        return limit(maxEscapeAngle.minAngle, bearingOffset, maxEscapeAngle.maxAngle)
     }
 
 }
