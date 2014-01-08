@@ -2,9 +2,12 @@ package lxx.model
 
 import java.lang.Double as JDouble
 import lxx.math.*
-import java.lang.Math.abs
-import java.lang.Math.signum
+import java.lang.Math.*
 import robocode.Rules
+import robocode.util.Utils
+import lxx.util.Logger
+
+private val UNKNOWN = "Unknown"
 
 data class LxxRobot(
         val battleRules: BattleRules,
@@ -22,8 +25,9 @@ data class LxxRobot(
         val radarHeading: Double,
         val gunHeat: Double,
         val firePower: Double?,
-        val acceleration: Double
-        ) : PointLike {
+        val acceleration: Double,
+        val advancedRobot: Boolean
+) : PointLike {
 
     val speed = abs(velocity)
 
@@ -39,7 +43,7 @@ data class LxxRobot(
 
 data class LxxRobotBuilder(
         val prevState: LxxRobot? = null,
-        var name: String = prevState?.name ?: "Unknown",
+        var name: String = prevState?.name ?: UNKNOWN,
         var alive: Boolean = prevState?.alive ?: true,
         var energy: Double = prevState?.energy ?: JDouble.NaN,
         var time: Long = prevState?.time ?: -999,
@@ -50,8 +54,11 @@ data class LxxRobotBuilder(
         var heading: Double = prevState?.heading ?: JDouble.NaN,
         var gunHeading: Double = prevState?.gunHeading ?: JDouble.NaN,
         var radarHeading: Double = prevState?.radarHeading ?: JDouble.NaN,
-        var gunHeat: Double = prevState?.gunHeading ?: JDouble.NaN,
-        var firePower: Double? = null
+        var gunHeat: Double = JDouble.NaN,
+        var firePower: Double? = null,
+        var givenDamage: Double = 0.0,
+        var takenDamage: Double = 0.0,
+        var advancedRobot: Boolean = prevState?.advancedRobot ?: false
 ) : PointLike {
 
     fun with(newName: String = name,
@@ -92,16 +99,60 @@ data class LxxRobotBuilder(
             x, y,
             velocity,
             heading, gunHeading, radarHeading,
-            gunHeat, firePower,
-            calculateAcceleration(prevState, velocity))
+            calculateGunHeat(battleRules), calculateFirePower(battleRules),
+            calculateAcceleration(prevState, velocity), isAdvancedRobot())
 
-    private fun calculateAcceleration(prevStateOption : LxxRobot?, velocity : Double) : Double {
-        if (prevStateOption == null) {
+    private fun calculateGunHeat(battleRules: BattleRules): Double {
+        if (!JDouble.isNaN(gunHeat)) {
+            return gunHeat
+        } else if (prevState == null) {
+            return battleRules.initialGunHeat - (battleRules.gunCoolingRate * time)
+        }
+
+        val prevGunHeat = if (JDouble.isNaN(prevState.gunHeat)) battleRules.initialGunHeat else prevState.gunHeat
+
+        return max(0.0, prevGunHeat - (time - prevState.time) * battleRules.gunCoolingRate)
+    }
+
+    private fun calculateFirePower(battleRules: BattleRules): Double {
+        if (firePower != null) {
+            return firePower!!
+        }
+
+        if (prevState == null || prevState.name == UNKNOWN) {
             return 0.0
         }
 
-        val prevState = prevStateOption!!
-        var acceleration : Double
+        val expectedEnergy = prevState.energy - takenDamage - wallDamage(battleRules) + givenDamage
+        val energyDiff = expectedEnergy - energy
+        if (energyDiff < 0.1) {
+            return 0.0
+        }
+        if (energy < expectedEnergy) {
+            Logger.debug({"$name fire with power ${energyDiff}"})
+        }
+        return limit(0.1, energyDiff, 3.0)
+    }
+
+    private fun wallDamage(battleRules: BattleRules): Double {
+        if (prevState == null || !isAdvancedRobot()) {
+            return 0.0
+        }
+        val expectedPos = prevState.project(heading, prevState.velocity)
+        if (velocity == 0.0 && !battleRules.battleField.availableRect.contains(expectedPos.x, expectedPos.y)) {
+            return Rules.getWallHitDamage(limit(0.0, abs(prevState.velocity + prevState.acceleration), Rules.MAX_VELOCITY))
+        } else {
+            return 0.0
+        }
+    }
+
+    private fun calculateAcceleration(prevState: LxxRobot?, velocity: Double): Double {
+        if (prevState == null) {
+            return 0.0
+        }
+
+        val prevState = prevState!!
+        var acceleration: Double
         if (sameDirection(velocity, prevState)) {
             acceleration = abs(velocity) - abs(prevState.velocity)
         } else {
@@ -114,8 +165,16 @@ data class LxxRobotBuilder(
         return acceleration
     }
 
-    private fun sameDirection(velocity : Double, prevState : LxxRobot) : Boolean {
+    private fun sameDirection(velocity: Double, prevState: LxxRobot): Boolean {
         return signum(velocity) == signum(prevState.velocity) || abs(velocity) < EPSILON
+    }
+
+    private fun isAdvancedRobot(): Boolean {
+        if (prevState != null && prevState.name != UNKNOWN && velocity != prevState.velocity &&
+        heading != prevState.heading && !prevState.name.startsWith("lxx") && velocity != 0.0 && time == prevState.time + 1) {
+            println("AAAAAAAAAAAAA")
+        }
+        return advancedRobot || (prevState != null && prevState.name != UNKNOWN && velocity != prevState.velocity && heading != prevState.heading && velocity != 0.0 && time == prevState.time + 1)
     }
 
     override fun x() = x

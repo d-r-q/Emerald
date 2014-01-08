@@ -38,6 +38,7 @@ import lxx.paint.LxxGraphics
 import java.awt.Graphics2D
 import robocode.PaintEvent
 import lxx.math.QuickMath
+import lxx.movement.WaveSurfingMovement
 
 open class Neutrino : AdvancedRobot() {
 
@@ -75,7 +76,7 @@ open class Neutrino : AdvancedRobot() {
             execute()
         } while (allEvents.find { it is ScannedRobotEvent } == null)
 
-        val battleField = BattleField(getWidth() / 2, getHeight() / 2, getBattleFieldWidth() - getWidth(), getBattleFieldHeight() - getHeight())
+        val battleField = BattleField(getBattleFieldWidth(), getBattleFieldHeight(), 18.0)
         val scannedRobotEvent = allEvents.find { it is ScannedRobotEvent } as ScannedRobotEvent
         val battleRules = BattleRules(battleField, getWidth(), getHeight(), getGunCoolingRate(), getEnergy(),
                 getName()!!, scannedRobotEvent.getName()!!)
@@ -90,14 +91,15 @@ open class Neutrino : AdvancedRobot() {
 
         {
             val mainGun = MainGun(battleRules.myName, battleRules.enemyName)
+            val waveSurfingMovement = WaveSurfingMovement(battleRules)
             val duelStrategy = DuelStrategy(battleRules.battleField, mainGun)
             strategies = listOf(FindEnemyStrategy(), duelStrategy, WinStrategy())
-            collectors = listOf(mainGun)
+            collectors = listOf(mainGun, waveSurfingMovement)
         }
 
         private val log = Log()
 
-        private val battleStateFactory = BattleStateFactory(log, battleRules)
+        private val battleStateFactory = BattleStateFactory(log, battleRules, getTime())
 
         fun run() {
 
@@ -110,6 +112,7 @@ open class Neutrino : AdvancedRobot() {
                     log.pushEvent(event)
                 }
                 val newState = battleStateFactory.getNewState()
+                setDebugProperty("Enemy gun heat", newState.enemy.gunHeat.toString())
                 if (!newState.me.alive) {
                     break
                 }

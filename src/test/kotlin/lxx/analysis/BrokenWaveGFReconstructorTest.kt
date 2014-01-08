@@ -21,7 +21,7 @@ class BrokenWaveGFReconstructorTest {
     fun testReconstruct() {
         val bulletSpeed = Rules.getBulletSpeed(0.1)
         val victim = LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_90, velocity = Rules.MAX_VELOCITY, name = stdRules.enemyName).build(stdRules)
-        val battleState = BattleState(stdRules, 0, attacker, victim)
+        val battleState = BattleState(stdRules, 0, attacker, victim, mapOf())
 
         val mea = getMaxEscapeAngle(attacker, victim, bulletSpeed)
 

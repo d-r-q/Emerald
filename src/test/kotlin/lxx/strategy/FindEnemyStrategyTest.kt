@@ -12,7 +12,7 @@ class FindEnemyStrategyTest {
     [Test]
     fun testFindEnemy() {
         val log = Log()
-        val battleStateFactory = BattleStateFactory(log, stdRules)
+        val battleStateFactory = BattleStateFactory(log, stdRules, 0)
         log.pushEvent(RobotStatus(time = 0))
         val state = battleStateFactory.getNewState()
 

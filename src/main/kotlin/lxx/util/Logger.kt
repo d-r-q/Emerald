@@ -10,10 +10,14 @@ enum class LogLevel(val intLevel: Int) {
 
 object Logger {
 
-    var level = LogLevel.OFF
+    var level = LogLevel.valueOf(System.getProperty("loglevel", "OFF")!!)
 
     fun debug(message: () -> String, ex: Throwable? = null) {
         log(LogLevel.DEBUG, message, ex)
+    }
+
+    fun warn(message: () -> String, ex: Throwable? = null) {
+        log(LogLevel.WARN, message, ex)
     }
 
     fun log(level: LogLevel, message: () -> String, ex: Throwable? = null) {

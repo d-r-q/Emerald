@@ -60,3 +60,5 @@ fun getAcceleratedSpeed(speed: Double): Double {
     assert(speed <= Rules.MAX_VELOCITY)
     return limit(0.0, speed + Rules.ACCELERATION, Rules.MAX_VELOCITY)
 }
+
+fun returnedEnergy(bulletPower : Double): Double = 3 * bulletPower

@@ -3,23 +3,19 @@ package lxx.model
 import lxx.math.*
 import java.lang.Math.max
 import robocode.util.Utils
+import java.awt.Rectangle
 
-data class BattleField(
-        val x: Double,
-        val y: Double,
-        val width: Double,
-        val height: Double
-) {
+data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Double, val robotHalfSize: Double) {
 
     private val WALL_STICK = 160
 
-    private val availableBottomY = y
-    private val availableTopY = y + height
-    private val availableLeftX = x
-    private val availableRightX = x + width
+    private val availableBottomY = robotHalfSize
+    private val availableTopY = battleFieldHeight - robotHalfSize
+    private val availableLeftX = robotHalfSize
+    private val availableRightX = battleFieldWidth - robotHalfSize
 
-    private val noSmoothX = IntervalDouble(WALL_STICK.toDouble(), width - WALL_STICK)
-    private val noSmoothY = IntervalDouble(WALL_STICK.toDouble(), height - WALL_STICK)
+    private val noSmoothX = IntervalDouble(WALL_STICK.toDouble(), battleFieldWidth - WALL_STICK)
+    private val noSmoothY = IntervalDouble(WALL_STICK.toDouble(), battleFieldHeight - WALL_STICK)
 
     private val top: Wall
     private val right: Wall
@@ -29,6 +25,9 @@ data class BattleField(
     private val leftTop: LxxPoint
     private val rightTop: LxxPoint
     private val rightBottom: LxxPoint
+
+    public val availableRect: Rectangle = Rectangle(availableLeftX.toInt(), availableBottomY.toInt(),
+            (battleFieldWidth - robotHalfSize * 2).toInt(), (battleFieldHeight - robotHalfSize * 2).toInt())
 
     val center: LxxPoint
 
@@ -44,9 +43,9 @@ data class BattleField(
         left = Wall(WallType.LEFT, RADIANS_270, RADIANS_180, RADIANS_360, availableLeftBottom, availableLeftTop)
 
         val bottomY = 0
-        val topY = y * 2 + height
+        val topY = battleFieldHeight
         val leftX = 0
-        val rightX = x * 2 + width
+        val rightX = battleFieldWidth
 
         leftTop = LxxPoint(leftX.toDouble(), topY.toDouble())
         rightTop = LxxPoint(rightX.toDouble(), topY.toDouble())
@@ -112,6 +111,7 @@ data class BattleField(
             }
         }
     }
+
     public fun smoothWalls(pnt: PointLike, desiredHeading: Double, isClockwise: Boolean): Double {
         if (noSmoothX.contains(pnt.x()) && noSmoothY.contains(pnt.y())) {
             return desiredHeading
@@ -119,6 +119,7 @@ data class BattleField(
 
         return smoothWall(getWall(pnt, desiredHeading), pnt, desiredHeading, isClockwise)
     }
+
     private fun smoothWall(wall: Wall, pnt: PointLike, desiredHeading: Double, isClockwise: Boolean): Double {
         val adjacentLeg = max(0.0, getDistanceToWall(wall, pnt))
         if (WALL_STICK < adjacentLeg)
@@ -138,7 +139,6 @@ data class BattleField(
                 else wall.ccwWall())
         return smoothWall(secondWall, pnt, smoothedAngle, isClockwise)
     }
-
 
     private inner data class Wall(
             val wallType: WallType,

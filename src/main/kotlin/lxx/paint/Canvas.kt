@@ -7,6 +7,7 @@ import java.awt.Color
 enum class Canvas(enabledPropName: String, private val autoReset: Boolean = true) {
 
     MY_WAVES : Canvas("paint.my.targeting.waves")
+    ENEMY_WAVES : Canvas("paint.enemy.targeting.waves")
     MY_TARGETING_PROFILE : Canvas("paint.my.targeting.profile", false)
 
     var enabled = java.lang.Boolean.getBoolean(enabledPropName)

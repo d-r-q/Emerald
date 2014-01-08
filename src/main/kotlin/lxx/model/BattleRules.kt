@@ -9,5 +9,6 @@ data class BattleRules (
         val myName: String,
         val enemyName: String
 ) {
-    val initialGunHeat = 3
+    val initialGunHeat = 3.0
+    val hitRobotDamage = 0.6
 }

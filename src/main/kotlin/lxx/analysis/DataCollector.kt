@@ -10,6 +10,13 @@ abstract class DataCollector<INPUT, OUTPUT, DATA>(
         protected val tree: KdTree<OUTPUT>
 ) : Collector {
 
-    abstract fun getData(battleState: BattleState, bulletSpeed: Double): List<Pair<DATA, Double>>
+    fun getData(battleState: BattleState, bulletSpeed: Double): List<Pair<DATA, Double>>  {
+        val dataPoints = tree.nearestNeighbor(getLocation(battleState), 100, true)!!
+        return dataPoints.map {
+            Pair(dataReconsturcor.reconstruct(battleState, it.value!!, bulletSpeed), 1 - (it.distance / dataPoints[0].distance))
+        }
+    }
+
+    protected abstract fun getLocation(battleState: BattleState): DoubleArray
 
 }
