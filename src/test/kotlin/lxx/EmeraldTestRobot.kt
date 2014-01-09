@@ -3,7 +3,7 @@ package lxx
 import java.awt.Color
 import java.util.concurrent.CyclicBarrier
 
-class NeutrinoTestRobot(val barrier: CyclicBarrier) : Neutrino() {
+class EmeraldTestRobot(val barrier: CyclicBarrier) : Emerald() {
 
     var setTurnRadarRightCalled = false
 

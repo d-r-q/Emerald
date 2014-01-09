@@ -40,7 +40,7 @@ import robocode.PaintEvent
 import lxx.math.QuickMath
 import lxx.movement.WaveSurfingMovement
 
-open class Neutrino : AdvancedRobot() {
+open class Emerald : AdvancedRobot() {
 
     {
         QuickMath.init()
@@ -65,7 +65,7 @@ open class Neutrino : AdvancedRobot() {
             return
         }
 
-        setColors(Color(2, 1, 0), Color(0xFF, 0xC1, 0x25), Color(0, 0, 0), Color(255, 255, 255), Color(255, 255, 255))
+        setColors(Color(0, 2, 1), Color(0x25, 0xFF, 0xC1), Color(0, 0, 0), Color(255, 255, 255), Color(255, 255, 255))
         setAdjustGunForRobotTurn(true)
         setAdjustRadarForGunTurn(true)
 
