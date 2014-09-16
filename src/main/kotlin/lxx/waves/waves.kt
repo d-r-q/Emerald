@@ -11,7 +11,7 @@ import lxx.math.*
 
 class WavesWatcher(private val attackerName: String) {
 
-    var wavesInAir: ArrayList<LxxWave> = ArrayList<LxxWave>()
+    var wavesInAir: List<LxxWave> = ArrayList()
 
     public fun watch(wave: LxxWave) {
         wavesInAir += wave
@@ -30,8 +30,8 @@ class WavesWatcher(private val attackerName: String) {
     }
 
     public fun getHitWaves(battleState: BattleState): List<BrokenWave> {
-        var brokenWaves = ArrayList<BrokenWave>()
-        for (detectedBullet in battleState.detectedBullets.get(attackerName)!!) {
+        var brokenWaves: List<BrokenWave> = ArrayList()
+        for (detectedBullet in battleState.detectedBullets[attackerName]!!) {
             var wave =
                     findWave(battleState.time, detectedBullet) ?:
                     generateWave(battleState, detectedBullet)
@@ -41,7 +41,7 @@ class WavesWatcher(private val attackerName: String) {
         return brokenWaves
     }
 
-    private fun findWave(time: Long, bullet: Bullet) = wavesInAir.find {
+    private fun findWave(time: Long, bullet: Bullet) = wavesInAir.firstOrNull() {
         Utils.isNear(it.speed, bullet.getVelocity()) &&
         abs(it.travelledDistance(time) - it.attacker.distance(bullet.getX(), bullet.getY())) < bullet.getVelocity()
     }

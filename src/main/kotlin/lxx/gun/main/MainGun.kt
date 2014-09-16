@@ -64,7 +64,7 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
         dataCollector.collectData(battleState)
     }
 
-    private fun selectFirePower(battleState: BattleState) = 1.95
+    private fun selectFirePower([suppress("UNUSED_PARAMETER")] battleState: BattleState) = 1.95
 
     private fun getProfile(battleState: BattleState, bulletSpeed: Double): Profile {
         val mea = lxx.model.getMaxEscapeAngle(battleState.me, battleState.enemy, bulletSpeed)

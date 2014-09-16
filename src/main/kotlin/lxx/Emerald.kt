@@ -2,7 +2,6 @@ package lxx
 
 import robocode.AdvancedRobot
 import robocode.StatusEvent
-import robocode.BattleResults
 import lxx.model.BattleRules
 import lxx.model.BattleField
 import java.awt.Color
@@ -10,24 +9,11 @@ import lxx.events.Log
 import lxx.model.BattleStateFactory
 import lxx.strategy.FindEnemyStrategy
 import lxx.strategy.TurnDecision
-import robocode.DeathEvent
 import robocode.ScannedRobotEvent
 import lxx.strategy.DuelStrategy
 import java.util.ArrayList
 import lxx.strategy.Strategy
 import lxx.strategy.WinStrategy
-import robocode.BulletHitEvent
-import robocode.BulletHitBulletEvent
-import robocode.BulletMissedEvent
-import robocode.HitByBulletEvent
-import robocode.HitRobotEvent
-import robocode.HitWallEvent
-import robocode.RobotDeathEvent
-import robocode.WinEvent
-import robocode.RoundEndedEvent
-import robocode.BattleEndedEvent
-import robocode.SkippedTurnEvent
-import java.awt.event.KeyEvent
 import lxx.events.FireEvent
 import lxx.gun.main.MainGun
 import robocode.MouseEvent
@@ -48,10 +34,10 @@ open class Emerald : AdvancedRobot() {
 
     private var allEvents: ArrayList<Event> = arrayListOf()
 
-    override fun onStatus(e: StatusEvent?) {
+    override fun onStatus(e: StatusEvent) {
         val rcEvents = getAllEvents()!!
         allEvents = ArrayList(rcEvents)
-        allEvents.add(0, e!!)
+        allEvents.add(0, e)
         rcEvents.clear()
     }
 
@@ -61,7 +47,7 @@ open class Emerald : AdvancedRobot() {
 
     override fun run() {
         if (getOthers() > 1) {
-            System.out.println(getClass().getName() + " isn't support battles with more than 1 opponents")
+            System.out.println(this.javaClass.getName() + " isn't support battles with more than 1 opponents")
             return
         }
 
@@ -74,10 +60,10 @@ open class Emerald : AdvancedRobot() {
             setTurnGunRightRadians(java.lang.Double.POSITIVE_INFINITY)
             setTurnRadarRightRadians(java.lang.Double.POSITIVE_INFINITY)
             execute()
-        } while (allEvents.find { it is ScannedRobotEvent } == null)
+        } while (allEvents.firstOrNull() { it is ScannedRobotEvent } == null)
 
         val battleField = BattleField(getBattleFieldWidth(), getBattleFieldHeight(), 18.0)
-        val scannedRobotEvent = allEvents.find { it is ScannedRobotEvent } as ScannedRobotEvent
+        val scannedRobotEvent = allEvents.firstOrNull { it is ScannedRobotEvent } as ScannedRobotEvent
         val battleRules = BattleRules(battleField, getWidth(), getHeight(), getGunCoolingRate(), getEnergy(),
                 getName()!!, scannedRobotEvent.getName()!!)
 
@@ -125,7 +111,7 @@ open class Emerald : AdvancedRobot() {
                     setColors(Color.BLACK, Color.BLACK, Color.BLACK)
                 }
 
-                val strategy = strategies.find { it.matches(newState) }
+                val strategy = strategies.firstOrNull() { it.matches(newState) }
 
                 if (strategy == null) {
                     throw AssertionError("Could not find strategy for state $newState")

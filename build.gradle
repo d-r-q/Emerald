@@ -1,9 +1,5 @@
 apply plugin: 'java'
 apply plugin: 'kotlin'
-apply plugin: "kotlin"
-
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
 
 version = '0.3'
 group = 'lxx'
@@ -11,12 +7,12 @@ group = 'lxx'
 jar.archiveName = "${group}.${name}_${version}.jar"
 
 buildscript {
-    ext.kotlin_version = '0.6.1673'
+    ext.kotlin_version = '0.8.679'
     repositories {
         mavenCentral()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$ext.kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -26,7 +22,7 @@ repositories {
 
 dependencies {
     compile files('lib/robocode-1.8.2.0.jar')
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$ext.kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     testCompile 'junit:junit:4.11'
 }
@@ -34,20 +30,20 @@ dependencies {
 task generateProperties
 generateProperties << {
 
-    def violetProperties = file("${sourceSets.main.output.classesDir}\\lxx\\${project.name}.properties")
-    if (!violetProperties.parentFile.exists()) {
-        violetProperties.parentFile.mkdirs()
+    def emeraldProperties = file("${sourceSets.main.output.classesDir}/lxx/${project.name}.properties")
+    if (!emeraldProperties.parentFile.exists()) {
+        emeraldProperties.parentFile.mkdirs()
     }
-    def vpWriter = violetProperties.newWriter()
-    vpWriter << "robot.description=\n"
-    vpWriter << "robocode.version=1.8\n"
-    vpWriter << "robot.java.source.included=true\n"
-    vpWriter << "robot.version=${project.version}\n"
-    vpWriter << "robot.author.name=Aleksey Zhidkov\n"
-    vpWriter << "robot.classname=lxx.${project.name}\n"
-    vpWriter << "robot.name=${project.name}\n"
-    vpWriter.flush()
-    vpWriter.close()
+    def epWriter = emeraldProperties.newWriter()
+    epWriter << "robot.description=\n"
+    epWriter << "robocode.version=1.8\n"
+    epWriter << "robot.java.source.included=true\n"
+    epWriter << "robot.version=${project.version}\n"
+    epWriter << "robot.author.name=Aleksey Zhidkov\n"
+    epWriter << "robot.classname=lxx.${project.name}\n"
+    epWriter << "robot.name=${project.name}\n"
+    epWriter.flush()
+    epWriter.close()
 }
 
 task copyKotlinRuntime
@@ -77,4 +73,8 @@ jar.dependsOn copyKotlinRuntime
 
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
+}
+
+compileKotlin {
+    kotlinOptions.annotations = file('annotations/robocode-1.8.2.0')
 }

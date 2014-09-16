@@ -4,7 +4,6 @@ import java.lang.Double as JDouble
 import lxx.math.*
 import java.lang.Math.*
 import robocode.Rules
-import robocode.util.Utils
 import lxx.util.Logger
 
 private val UNKNOWN = "Unknown"
@@ -151,7 +150,6 @@ data class LxxRobotBuilder(
             return 0.0
         }
 
-        val prevState = prevState!!
         var acceleration: Double
         if (sameDirection(velocity, prevState)) {
             acceleration = abs(velocity) - abs(prevState.velocity)
