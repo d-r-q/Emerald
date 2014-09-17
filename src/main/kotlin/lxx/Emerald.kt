@@ -5,7 +5,7 @@ import robocode.StatusEvent
 import lxx.model.BattleRules
 import lxx.model.BattleField
 import java.awt.Color
-import lxx.events.Log
+import lxx.events.EventsSource
 import lxx.model.BattleStateFactory
 import lxx.strategy.FindEnemyStrategy
 import lxx.strategy.TurnDecision
@@ -25,6 +25,7 @@ import java.awt.Graphics2D
 import robocode.PaintEvent
 import lxx.math.QuickMath
 import lxx.movement.WaveSurfingMovement
+import lxx.events.robocodeEvents
 
 open class Emerald : AdvancedRobot() {
 
@@ -83,19 +84,19 @@ open class Emerald : AdvancedRobot() {
             collectors = listOf(mainGun, waveSurfingMovement)
         }
 
-        private val log = Log()
+        private val eventsSource = EventsSource()
 
-        private val battleStateFactory = BattleStateFactory(log, battleRules, getTime())
+        private val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(robocodeEvents), battleRules, getTime())
 
         fun run() {
 
-            val paintEventsSource = log.getEventsSource {
+            val paintEventsSource = eventsSource.getEventsStream {
                 it is PaintEvent
             }
 
             while (true) {
                 for (event in allEvents.filterNot { it is MouseEvent }) {
-                    log.pushEvent(event)
+                    eventsSource.pushEvent(event)
                 }
                 val newState = battleStateFactory.getNewState()
                 setDebugProperty("Enemy gun heat", newState.enemy.gunHeat.toString())
@@ -148,7 +149,7 @@ open class Emerald : AdvancedRobot() {
             }
 
             val bullet = setFireBullet(turnDecision.firePower)
-            log.pushEvent(FireEvent(battleRules.myName, bullet))
+            eventsSource.pushEvent(FireEvent(battleRules.myName, bullet))
         }
 
         private fun aimGun(turnDecision: TurnDecision): Unit {

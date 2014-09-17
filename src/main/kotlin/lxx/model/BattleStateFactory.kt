@@ -1,13 +1,9 @@
 package lxx.model
 
-import robocode.Event
-import lxx.events.Log
-import robocode.RobotStatus
 import robocode.RobotDeathEvent
 import robocode.DeathEvent
 import robocode.ScannedRobotEvent
 
-import java.lang.Double as JDouble
 import lxx.events.FireEvent
 import robocode.StatusEvent
 import java.util.HashMap
@@ -21,11 +17,7 @@ import robocode.Rules
 import robocode.HitRobotEvent
 import lxx.util.Logger
 
-class BattleStateFactory(log: Log, private val battleRules: BattleRules, val time: Long) {
-
-    private val filter: (Any) -> Boolean = { it is Event }
-
-    private val eventsSource = log.getEventsSource(filter)
+class BattleStateFactory(private val eventsSource: Stream<Any>, private val battleRules: BattleRules, val time: Long) {
 
     private var myPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
     private var enemyPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
@@ -123,8 +115,8 @@ class BattleStateFactory(log: Log, private val battleRules: BattleRules, val tim
         myPrevState = myNewState.build(battleRules)
         enemyPrevState = enemyNewState.build(battleRules)
 
-        assert(enemyPrevState.x != JDouble.NaN)
-        assert(enemyPrevState.y != JDouble.NaN)
+        assert(!enemyPrevState.x.isNaN())
+        assert(!enemyPrevState.y.isNaN())
         assert(enemyPrevState.gunHeat >= 0, "Enemy gun heat = ${enemyPrevState.gunHeat}")
         assert(enemyPrevState.gunHeat <= battleRules.initialGunHeat, "Enemy gun heat = ${enemyPrevState.gunHeat}")
 

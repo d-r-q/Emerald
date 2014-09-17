@@ -2,6 +2,7 @@
   <library name="robocode-1.8.2.0">
     <ANNOTATIONS>
       <root url="file://$PROJECT_DIR$/annotations/robocode-1.8.2.0" />
+      <root url="file://$PROJECT_DIR$/annotations/robocode-1.8.2.0" />
     </ANNOTATIONS>
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/robocode-1.8.2.0.jar!/" />

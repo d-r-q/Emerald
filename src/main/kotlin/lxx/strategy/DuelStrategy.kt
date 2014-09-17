@@ -4,11 +4,9 @@ import lxx.model.BattleState
 import robocode.util.Utils
 import java.lang.Math.signum
 import lxx.math.*
-import lxx.model.PointLike
 import lxx.model.BattleField
 import lxx.movement.RandomOrbitalMovement
 import lxx.gun.main.MainGun
-import lxx.movement.StayAtCenterMovement
 
 class DuelStrategy(battleField: BattleField, private val gun: MainGun) : Strategy {
 

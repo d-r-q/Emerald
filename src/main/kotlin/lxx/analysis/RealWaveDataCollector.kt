@@ -26,9 +26,7 @@ class RealWaveDataCollector<OUTPUT, DATA>(
         val brokenWaves = wavesWatcher.getBrokenWaves(battleState)
         if (mode == CollectionMode.VISITS) {
             brokenWaves.forEach { tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it)) }
-        }
-
-        if (mode == CollectionMode.HITS) {
+        } else if (mode == CollectionMode.HITS) {
             val hitWaves = wavesWatcher.getHitWaves(battleState)
             hitWaves.forEach { tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it)) }
         }

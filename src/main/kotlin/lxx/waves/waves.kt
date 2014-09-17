@@ -32,7 +32,7 @@ class WavesWatcher(private val attackerName: String) {
     public fun getHitWaves(battleState: BattleState): List<BrokenWave> {
         var brokenWaves: List<BrokenWave> = ArrayList()
         for (detectedBullet in battleState.detectedBullets[attackerName]!!) {
-            var wave =
+            val wave =
                     findWave(battleState.time, detectedBullet) ?:
                     generateWave(battleState, detectedBullet)
             brokenWaves += BrokenWave(wave, wave.toBearingOffset(detectedBullet.getHeadingRadians()))
