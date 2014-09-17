@@ -1,22 +1,14 @@
 package lxx.model
 
 import org.junit.Test
-import lxx.events.EventsSource
-import lxx.RobotStatus
-import lxx.math.*
 import kotlin.test.assertTrue
-import lxx.stdRules
-import robocode.StatusEvent
-import lxx.events.robocodeEvents
+import lxx.defaultBattleState
 
 class BattleStateFactoryTest {
 
     [Test]
     fun testBattleStateFactory() {
-        val eventsSource = EventsSource()
-        val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(robocodeEvents), stdRules, 0)
-        eventsSource.pushEvent(StatusEvent(RobotStatus(x = 0.0, y = 0.0, time = 0L, bodyHeading = RADIANS_90, radarHeading = RADIANS_90)))
-        val newState = battleStateFactory.getNewState()
+        val newState = defaultBattleState()
         assertTrue(newState.me.x == 0.0)
         assertTrue(newState.me.alive)
     }

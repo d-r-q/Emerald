@@ -2,6 +2,9 @@ package lxx.math;
 
 public final class QuickMath {
 
+	// work around for absence of NaN value in kotlin
+	public static final double NaN = Double.NaN;
+
     public static final double PI = 3.1415926535897932384626433832795D;
     public static final double TWO_PI = 6.2831853071795864769252867665590D;
     public static final double HALF_PI = 1.5707963267948966192313216916398D;
