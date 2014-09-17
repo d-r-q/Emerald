@@ -25,7 +25,6 @@ import java.awt.Graphics2D
 import robocode.PaintEvent
 import lxx.math.QuickMath
 import lxx.movement.WaveSurfingMovement
-import lxx.events.robocodeEvents
 
 open class Emerald : AdvancedRobot() {
 
@@ -84,9 +83,9 @@ open class Emerald : AdvancedRobot() {
             collectors = listOf(mainGun, waveSurfingMovement)
         }
 
-        private val eventsSource = EventsSource()
+        private val eventsSource = EventsSource<Event>()
 
-        private val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(robocodeEvents), battleRules, getTime())
+        private val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(lxx.events.allEvents), battleRules, getTime())
 
         fun run() {
 

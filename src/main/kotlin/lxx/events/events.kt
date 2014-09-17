@@ -5,21 +5,22 @@ import lxx.util.Logger
 import robocode.Event
 
 public val robocodeEvents: (Any) -> Boolean = { it is Event }
+public val allEvents: (Any) -> Boolean = { true }
 
-class EventsSource {
+class EventsSource<T> {
 
-    private val registeredSources = ArrayList<IteratorRergistration>()
+    private val registeredSources = ArrayList<IteratorRergistration<T>>()
 
-    fun getEventsStream(filter: (Any) -> Boolean): Stream<Any> {
-        val iter = EventsIterator()
+    fun getEventsStream(filter: (T) -> Boolean): Stream<T> {
+        val iter = EventsIterator<T>()
         registeredSources.add(IteratorRergistration(filter, iter))
 
-        return object : Stream<Any> {
-            override public fun iterator(): Iterator<Any> = iter
+        return object : Stream<T> {
+            override public fun iterator(): Iterator<T> = iter
         }
     }
 
-    fun pushEvent(event: Any) {
+    fun pushEvent(event: T) {
         for ((filter, iter) in registeredSources) {
             if (filter(event)) {
                 iter.events.add(event)
@@ -30,9 +31,9 @@ class EventsSource {
 
 }
 
-private class EventsIterator() : Iterator<Any> {
+private class EventsIterator<T>() : Iterator<T> {
 
-    val events = ArrayList<Any>()
+    val events = ArrayList<T>()
 
     override fun next() = events.remove(0)
 
@@ -40,4 +41,4 @@ private class EventsIterator() : Iterator<Any> {
 
 }
 
-private data class IteratorRergistration(val filter: (Any) -> Boolean, val iterator: EventsIterator)
+private data class IteratorRergistration<T>(val filter: (T) -> Boolean, val iterator: EventsIterator<T>)

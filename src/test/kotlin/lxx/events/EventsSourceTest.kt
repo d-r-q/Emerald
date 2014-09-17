@@ -7,8 +7,8 @@ public class EventsSourceTest {
 
     [Test]
     fun logEventSourceShouldBeTraversableMultipleTimes() {
-        val log = EventsSource()
-        val source = log.getEventsStream { true }
+        val log = EventsSource<Int>()
+        val source = log.getEventsStream(allEvents)
 
         log.pushEvent(1)
         var found = false
@@ -27,9 +27,9 @@ public class EventsSourceTest {
 
     [Test]
     fun pastEventsShouldBeLost() {
-        val log = EventsSource()
+        val log = EventsSource<Int>()
         log.pushEvent(1)
-        val source = log.getEventsStream { true }
+        val source = log.getEventsStream(allEvents)
         Assert.assertTrue("Past event sholud not be found", source.none())
     }
 
