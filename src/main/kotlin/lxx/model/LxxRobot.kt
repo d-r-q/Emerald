@@ -52,6 +52,17 @@ data class LxxRobot(
                 gunHeat = max(0.0, gunHeat - battleRules.gunCoolingRate))
     }
 
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is LxxRobot -> name == other.name && time == other.time
+            else -> false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return (name.hashCode() * 31 + time).toInt()
+    }
+
 }
 
 data class LxxRobotBuilder(
