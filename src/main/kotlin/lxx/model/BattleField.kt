@@ -64,8 +64,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
             } else {
                 return right
             }
-        }
-        else if (heading < RADIANS_180) {
+        } else if (heading < RADIANS_180) {
             val rightBottomTg = pos.y() / (rightBottom.x - pos.x())
             if (normalHeadingTg < rightBottomTg) {
                 return right
@@ -79,8 +78,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
             } else {
                 return left
             }
-        }
-        else if (heading < RADIANS_360) {
+        } else if (heading < RADIANS_360) {
             val leftTopTg = (leftTop.y - pos.y()) / pos.x()
             if (normalHeadingTg < leftTopTg) {
                 return left
@@ -120,17 +118,20 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         return smoothWall(getWall(pnt, desiredHeading), pnt, desiredHeading, isClockwise)
     }
 
+    public fun notNearWall(robotPos: PointLike): Boolean =
+            robotPos.x() > availableLeftX && robotPos.x() < availableRightX &&
+                    robotPos.y() > availableBottomY && robotPos.y() < availableTopY
+
     private fun smoothWall(wall: Wall, pnt: PointLike, desiredHeading: Double, isClockwise: Boolean): Double {
         val adjacentLeg = max(0.0, getDistanceToWall(wall, pnt))
-        if (WALL_STICK < adjacentLeg)
-        {
+        if (WALL_STICK < adjacentLeg) {
             return desiredHeading
         }
 
         val smoothAngle =
                 QuickMath.acos(adjacentLeg / WALL_STICK) *
-                (if (isClockwise) 1
-                else -1).toDouble()
+                        (if (isClockwise) 1
+                        else -1).toDouble()
 
         val baseAngle = wall.fromCenterAngle
         val smoothedAngle = Utils.normalAbsoluteAngle(baseAngle + smoothAngle)

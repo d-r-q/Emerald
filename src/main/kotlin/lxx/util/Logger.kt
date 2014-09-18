@@ -16,6 +16,10 @@ object Logger {
         log(LogLevel.DEBUG, message, ex)
     }
 
+    fun info(message: () -> String, ex: Throwable? = null) {
+        log(LogLevel.INFO, message, ex)
+    }
+
     fun warn(message: () -> String, ex: Throwable? = null) {
         log(LogLevel.WARN, message, ex)
     }

@@ -1,10 +1,12 @@
 package lxx.model
 
-import java.lang.Double as JDouble
 import lxx.math.*
+import lxx.math.QuickMath.NaN
 import java.lang.Math.*
 import robocode.Rules
 import lxx.util.Logger
+import lxx.movement.MovementDecision
+import robocode.util.Utils
 
 private val UNKNOWN = "Unknown"
 
@@ -38,22 +40,34 @@ data class LxxRobot(
     override fun x() = x
     override fun y() = y
 
+    fun apply(movementDecision: MovementDecision): LxxRobot {
+        val velocity = newVelocity(velocity, movementDecision.movementDirection)
+        val maxTurnRate = Rules.getTurnRateRadians(this.velocity)
+        val turnRate = limit(-maxTurnRate, movementDecision.turnRate, maxTurnRate)
+        val heading = Utils.normalAbsoluteAngle(heading + turnRate)
+        val (x, y) = project(heading, velocity)
+        return this.copy(time = time + 1, prevState = this,
+                x = x, y = y,
+                velocity = velocity, heading = heading, acceleration = calculateAcceleration(this, velocity),
+                gunHeat = max(0.0, gunHeat - battleRules.gunCoolingRate))
+    }
+
 }
 
 data class LxxRobotBuilder(
         val prevState: LxxRobot? = null,
         var name: String = prevState?.name ?: UNKNOWN,
         var alive: Boolean = prevState?.alive ?: true,
-        var energy: Double = prevState?.energy ?: JDouble.NaN,
+        var energy: Double = prevState?.energy ?: NaN,
         var time: Long = prevState?.time ?: -999,
         var lastScanTime: Long = prevState?.lastScanTime ?: -999,
-        var x: Double = prevState?.x ?: JDouble.NaN,
-        var y: Double = prevState?.y ?: JDouble.NaN,
-        var velocity: Double = prevState?.velocity ?: JDouble.NaN,
-        var heading: Double = prevState?.heading ?: JDouble.NaN,
-        var gunHeading: Double = prevState?.gunHeading ?: JDouble.NaN,
-        var radarHeading: Double = prevState?.radarHeading ?: JDouble.NaN,
-        var gunHeat: Double = JDouble.NaN,
+        var x: Double = prevState?.x ?: NaN,
+        var y: Double = prevState?.y ?: NaN,
+        var velocity: Double = prevState?.velocity ?: NaN,
+        var heading: Double = prevState?.heading ?: NaN,
+        var gunHeading: Double = prevState?.gunHeading ?: NaN,
+        var radarHeading: Double = prevState?.radarHeading ?: NaN,
+        var gunHeat: Double = NaN,
         var firePower: Double? = null,
         var givenDamage: Double = 0.0,
         var takenDamage: Double = 0.0,
@@ -99,16 +113,16 @@ data class LxxRobotBuilder(
             velocity,
             heading, gunHeading, radarHeading,
             calculateGunHeat(battleRules), calculateFirePower(battleRules),
-            calculateAcceleration(prevState, velocity), isAdvancedRobot())
+            calculateAcceleration(prevState, velocity), isAdvancedRobot(battleRules))
 
     private fun calculateGunHeat(battleRules: BattleRules): Double {
-        if (!JDouble.isNaN(gunHeat)) {
+        if (!gunHeat.isNaN()) {
             return gunHeat
         } else if (prevState == null) {
             return battleRules.initialGunHeat - (battleRules.gunCoolingRate * time)
         }
 
-        val prevGunHeat = if (JDouble.isNaN(prevState.gunHeat)) battleRules.initialGunHeat else prevState.gunHeat
+        val prevGunHeat = if (prevState.gunHeat.isNaN()) battleRules.initialGunHeat else prevState.gunHeat
 
         return max(0.0, prevGunHeat - (time - prevState.time) * battleRules.gunCoolingRate)
     }
@@ -128,13 +142,13 @@ data class LxxRobotBuilder(
             return 0.0
         }
         if (energy < expectedEnergy) {
-            Logger.debug({"$name fire with power ${energyDiff}"})
+            Logger.debug({ "$name fire with power ${energyDiff}" })
         }
         return limit(0.1, energyDiff, 3.0)
     }
 
     private fun wallDamage(battleRules: BattleRules): Double {
-        if (prevState == null || !isAdvancedRobot()) {
+        if (prevState == null || !isAdvancedRobot(battleRules)) {
             return 0.0
         }
         val expectedPos = prevState.project(heading, prevState.velocity)
@@ -145,35 +159,24 @@ data class LxxRobotBuilder(
         }
     }
 
-    private fun calculateAcceleration(prevState: LxxRobot?, velocity: Double): Double {
-        if (prevState == null) {
-            return 0.0
+    private fun isAdvancedRobot(battleRules: BattleRules): Boolean {
+        val behavesLikeAdvanced = known() && movingAndTurning() && notHitWall(battleRules) && noSkippedScans()
+
+        if (!advancedRobot && behavesLikeAdvanced) {
+            Logger.info({ "Enemy recognized as AdvancedRobot" })
         }
 
-        var acceleration: Double
-        if (sameDirection(velocity, prevState)) {
-            acceleration = abs(velocity) - abs(prevState.velocity)
-        } else {
-            acceleration = abs(velocity)
-        }
-        if (prevState.time != prevState.lastScanTime) {
-            acceleration = limit(-Rules.DECELERATION, acceleration, Rules.ACCELERATION)
-        }
-
-        return acceleration
+        return advancedRobot || behavesLikeAdvanced
     }
 
-    private fun sameDirection(velocity: Double, prevState: LxxRobot): Boolean {
-        return signum(velocity) == signum(prevState.velocity) || abs(velocity) < EPSILON
-    }
+    private fun known() = prevState != null && prevState.name != UNKNOWN
 
-    private fun isAdvancedRobot(): Boolean {
-        if (prevState != null && prevState.name != UNKNOWN && velocity != prevState.velocity &&
-        heading != prevState.heading && !prevState.name.startsWith("lxx") && velocity != 0.0 && time == prevState.time + 1) {
-            println("AAAAAAAAAAAAA")
-        }
-        return advancedRobot || (prevState != null && prevState.name != UNKNOWN && velocity != prevState.velocity && heading != prevState.heading && velocity != 0.0 && time == prevState.time + 1)
-    }
+    private fun noSkippedScans() = prevState != null && time == prevState.time + 1
+
+    private fun notHitWall(battleRules: BattleRules) = velocity != 0.0 ||
+            (prevState != null && battleRules.battleField.notNearWall(prevState))
+
+    private fun movingAndTurning() = prevState != null && velocity != prevState.velocity && heading != prevState.heading
 
     override fun x() = x
     override fun y() = y

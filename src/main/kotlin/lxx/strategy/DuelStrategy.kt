@@ -4,20 +4,18 @@ import lxx.model.BattleState
 import robocode.util.Utils
 import java.lang.Math.signum
 import lxx.math.*
-import lxx.model.BattleField
-import lxx.movement.RandomOrbitalMovement
 import lxx.gun.main.MainGun
+import lxx.movement.WaveSurfingMovement
 
-class DuelStrategy(battleField: BattleField, private val gun: MainGun) : Strategy {
-
-    private val movement = RandomOrbitalMovement(battleField)
+class DuelStrategy(private val gun: MainGun,
+                   private val movement: WaveSurfingMovement) : Strategy {
 
     override fun matches(battleState: BattleState) = battleState.enemy.alive
 
     override fun getTurnDecision(battleState: BattleState): TurnDecision {
         val movementDecision = movement.getMovementDecision(battleState)
         val gunDecision = gun.getTurnDecision(battleState)
-        return TurnDecision(movementDecision.movementDirection, movementDecision.turnRateRadians,
+        return TurnDecision(movementDecision.movementDirection, movementDecision.turnRate,
                 gunDecision.gunTurnAngle, gunDecision.firePower ?: 0.0,
                 getRadarTurnAngleRadians(battleState))
     }

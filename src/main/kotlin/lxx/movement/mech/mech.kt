@@ -14,8 +14,8 @@ fun toMovementDecision(robot: LxxRobot, desiredSpeed: Double, desiredHeading: Do
 
     val turnRemaining = normalRelativeAngle(normalizedDesiredHeading - robot.heading)
     val direction = desiredSpeed *
-    if (wantToGoFront(robot, desiredHeading)) 1.0
-    else -1.0
+            if (wantToGoFront(robot, desiredHeading)) 1.0
+            else -1.0
 
     return MovementDecision(direction, turnRemaining)
 }

@@ -5,7 +5,7 @@ import ags.utils.KdTree
 import lxx.model.LxxRobot
 import lxx.model.lateralVelocity
 import robocode.Rules
-import lxx.analysis.BrokenWaveGFReconstructor
+import lxx.analysis.WaveGfReconstructor
 import lxx.analysis.Collector
 import lxx.analysis.Profile
 import robocode.util.Utils
@@ -38,7 +38,7 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
 
     }
 
-    private val dataCollector = RealWaveDataCollector(locFormula, BrokenWaveGFReconstructor(myName, enemyName), tree, myName, enemyName, CollectionMode.VISITS)
+    private val dataCollector = RealWaveDataCollector(locFormula, WaveGfReconstructor(myName, enemyName), tree, myName, enemyName, CollectionMode.VISITS)
 
     public fun getTurnDecision(battleState: BattleState): GunDecision {
 

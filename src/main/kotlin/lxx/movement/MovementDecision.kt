@@ -1,3 +1,3 @@
 package lxx.movement
 
-data class MovementDecision(val movementDirection: Double, val turnRateRadians: Double)
+data class MovementDecision(val movementDirection: Double, val turnRate: Double)

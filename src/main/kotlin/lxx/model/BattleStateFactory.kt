@@ -21,6 +21,7 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
 
     private var myPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
     private var enemyPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
+    private var prevBattleState: BattleState? = null
 
     fun getNewState(): BattleState {
 
@@ -120,6 +121,7 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
         assert(enemyPrevState.gunHeat >= 0, "Enemy gun heat = ${enemyPrevState.gunHeat}")
         assert(enemyPrevState.gunHeat <= battleRules.initialGunHeat, "Enemy gun heat = ${enemyPrevState.gunHeat}")
 
-        return BattleState(battleRules, time, myPrevState, enemyPrevState, detectedBullets)
+        prevBattleState = BattleState(battleRules, time, myPrevState, enemyPrevState, detectedBullets, prevBattleState)
+        return prevBattleState!!
     }
 }

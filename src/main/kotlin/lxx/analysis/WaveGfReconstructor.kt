@@ -1,23 +1,23 @@
 package lxx.analysis
 
-import lxx.waves.BrokenWave
 import lxx.model.*
 import java.lang.Math.abs
 import lxx.math.limit
+import lxx.waves.WaveWithOffset
 
-class BrokenWaveGFReconstructor(
+class WaveGfReconstructor(
         private val observerName: String,
         private val observableName: String
-) : DataReconstructor<BrokenWave, Double, Double> {
+) : DataReconstructor<WaveWithOffset, Double, Double> {
 
-    override fun destruct(input: BrokenWave): Double {
+    override fun destruct(input: WaveWithOffset): Double {
         val maxEscapeAngle = getMaxEscapeAngle(input.wave.attacker, input.wave.victim, input.wave.speed)
-        val guessFactor = abs(input.hitOffset - maxEscapeAngle.backward) / maxEscapeAngle.length()
+        val guessFactor = abs(input.offset - maxEscapeAngle.backward) / maxEscapeAngle.length()
 
-        assert(guessFactor >= 0, "Guess factor ($guessFactor) is less than 0, hit offset = ${input.hitOffset}, " +
+        assert(guessFactor >= 0, "Guess factor ($guessFactor) is less than 0, hit offset = ${input.offset}, " +
         "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}")
 
-        assert(guessFactor <= 1, "Guess factor ($guessFactor) is greater than 1, hit offset = ${input.hitOffset}, " +
+        assert(guessFactor <= 1, "Guess factor ($guessFactor) is greater than 1, hit offset = ${input.offset}, " +
         "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}")
 
         return limit(0.0, guessFactor, 1.0)

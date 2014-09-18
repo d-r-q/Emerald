@@ -78,7 +78,7 @@ open class Emerald : AdvancedRobot() {
         {
             val mainGun = MainGun(battleRules.myName, battleRules.enemyName)
             val waveSurfingMovement = WaveSurfingMovement(battleRules)
-            val duelStrategy = DuelStrategy(battleRules.battleField, mainGun)
+            val duelStrategy = DuelStrategy(mainGun, waveSurfingMovement)
             strategies = listOf(FindEnemyStrategy(), duelStrategy, WinStrategy())
             collectors = listOf(mainGun, waveSurfingMovement)
         }
@@ -89,43 +89,48 @@ open class Emerald : AdvancedRobot() {
 
         fun run() {
 
+            Canvas.values().forEach { it.reset() }
             val paintEventsSource = eventsSource.getEventsStream {
                 it is PaintEvent
             }
 
             while (true) {
-                for (event in allEvents.filterNot { it is MouseEvent }) {
-                    eventsSource.pushEvent(event)
-                }
-                val newState = battleStateFactory.getNewState()
-                setDebugProperty("Enemy gun heat", newState.enemy.gunHeat.toString())
-                if (!newState.me.alive) {
-                    break
-                }
+                try {
+                    for (event in allEvents.filterNot { it is MouseEvent }) {
+                        eventsSource.pushEvent(event)
+                    }
+                    val newState = battleStateFactory.getNewState()
+                    setDebugProperty("Enemy gun heat", newState.enemy.gunHeat.toString())
+                    if (!newState.me.alive) {
+                        break
+                    }
 
-                for (collector in collectors) {
-                    collector.collectData(newState)
-                }
+                    for (collector in collectors) {
+                        collector.collectData(newState)
+                    }
 
-                if (!newState.enemy.alive && newState.me.heading == 0.0 && newState.me.gunHeading == 0.0 && newState.me.radarHeading == 0.0) {
-                    setColors(Color.BLACK, Color.BLACK, Color.BLACK)
-                }
+                    if (!newState.enemy.alive && newState.me.heading == 0.0 && newState.me.gunHeading == 0.0 && newState.me.radarHeading == 0.0) {
+                        setColors(Color.BLACK, Color.BLACK, Color.BLACK)
+                    }
 
-                val strategy = strategies.firstOrNull() { it.matches(newState) }
+                    val strategy = strategies.firstOrNull() { it.matches(newState) }
 
-                if (strategy == null) {
-                    throw AssertionError("Could not find strategy for state $newState")
-                }
+                    if (strategy == null) {
+                        throw AssertionError("Could not find strategy for state $newState")
+                    }
 
-                val turnDecision = strategy.getTurnDecision(newState)
-                move(turnDecision)
-                turnRadar(turnDecision)
-                handleGun(turnDecision)
+                    val turnDecision = strategy.getTurnDecision(newState)
+                    move(turnDecision)
+                    turnRadar(turnDecision)
+                    handleGun(turnDecision)
 
-                paintEventsSource.any { g ->
-                    val graphics = LxxGraphics(getGraphics()!!)
-                    Canvas.values().forEach { it.draw(graphics) }
-                    true
+                    paintEventsSource.any { g ->
+                        val graphics = LxxGraphics(getGraphics()!!)
+                        Canvas.values().forEach { it.draw(graphics) }
+                        true
+                    }
+                } catch (t: Throwable) {
+                    t.printStackTrace()
                 }
 
                 execute()

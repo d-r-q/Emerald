@@ -9,6 +9,8 @@ enum class Canvas(enabledPropName: String, private val autoReset: Boolean = true
     MY_WAVES : Canvas("paint.my.targeting.waves")
     ENEMY_WAVES : Canvas("paint.enemy.targeting.waves")
     MY_TARGETING_PROFILE : Canvas("paint.my.targeting.profile", false)
+    MY_MOVEMENT_PROFILE : Canvas("paint.my.movement.profile", false)
+    PREDICTED_POSITIONS : Canvas("paint.my.movement.predicted_positions", false)
 
     var enabled = java.lang.Boolean.getBoolean(enabledPropName)
 
@@ -23,6 +25,12 @@ enum class Canvas(enabledPropName: String, private val autoReset: Boolean = true
     fun drawCircle(center: PointLike, radius: Double) {
         if (enabled) {
             commands.add { g -> g.drawCircle(center, radius) }
+        }
+    }
+
+    fun fillCircle(center: PointLike, radius: Double) {
+        if (enabled) {
+            commands.add { g -> g.fillCircle(center, radius) }
         }
     }
 

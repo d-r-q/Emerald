@@ -11,10 +11,9 @@ class Profile(
 
     private val smoothedData = DoubleArray(data.size)
 
-    public fun addScore(bearingOffset: Double, score: Double) {
+    public fun addScore(bearingOffset: Double, score: Double, width: Int = 4) {
         val idx = toIdx(bearingOffset)
         data[idx] += score
-        val width = 4
         val from = Math.max(0, idx - width)
         val to = Math.min(data.size - 1, idx + width)
 
@@ -37,6 +36,8 @@ class Profile(
                 else bestIdxPair.component1()
         return toBearingOffset(bestIdx)
     }
+
+    public fun bearingOffsetDanger(bo: Double): Double = smoothedData[toIdx(bo)]
 
     private fun toIdx(bearingOffset: Double): Int {
 

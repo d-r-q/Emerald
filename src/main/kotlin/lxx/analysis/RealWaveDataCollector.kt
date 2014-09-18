@@ -1,34 +1,34 @@
 package lxx.analysis
 
 import lxx.model.BattleState
-import lxx.waves.BrokenWave
 import java.awt.Color
-import lxx.model.LxxWave
+import lxx.waves.LxxWave
 import lxx.paint.Canvas
 import lxx.waves.WavesWatcher
 import robocode.Rules
 import lxx.model.LxxRobot
 import ags.utils.KdTree
 import lxx.analysis.RealWaveDataCollector.CollectionMode
+import lxx.waves.WaveWithOffset
 
 class RealWaveDataCollector<OUTPUT, DATA>(
         locFormula: (LxxRobot, LxxRobot) -> DoubleArray,
-        dataReconsturcor: DataReconstructor<BrokenWave, OUTPUT, DATA>,
+        dataReconsturcor: DataReconstructor<WaveWithOffset, OUTPUT, DATA>,
         tree: KdTree<OUTPUT>,
         private val observerName: String,
         private val observableName: String,
         private val mode: CollectionMode
-) : DataCollector<BrokenWave, OUTPUT, DATA>(locFormula, dataReconsturcor, tree) {
+) : DataCollector<WaveWithOffset, OUTPUT, DATA>(locFormula, dataReconsturcor, tree) {
 
-    private val wavesWatcher = WavesWatcher(observableName)
+    private val wavesWatcher = WavesWatcher(observerName, observableName)
+    private val waves = if (mode == CollectionMode.VISITS) wavesWatcher.brokenWavesStream() else wavesWatcher.hitWavesStream()
+    private val hitWaves = wavesWatcher.hitWavesStream()
 
     override fun collectData(battleState: BattleState) {
-        val brokenWaves = wavesWatcher.getBrokenWaves(battleState)
-        if (mode == CollectionMode.VISITS) {
-            brokenWaves.forEach { tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it)) }
-        } else if (mode == CollectionMode.HITS) {
-            val hitWaves = wavesWatcher.getHitWaves(battleState)
-            hitWaves.forEach { tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it)) }
+        wavesWatcher.collectData(battleState)
+
+        waves.forEach {
+            tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it))
         }
 
         val attacker = battleState.robotByName(observerName)
@@ -37,7 +37,7 @@ class RealWaveDataCollector<OUTPUT, DATA>(
         assert(victim.prevState != null)
 
         if (attacker.firePower != null && attacker.firePower > 0.0) {
-            val wave = LxxWave(battleState.time - 1, attacker.prevState!!, victim.prevState!!, Rules.getBulletSpeed(attacker.firePower))
+            val wave = LxxWave(battleState.prevState!!, observerName, observableName, Rules.getBulletSpeed(attacker.firePower))
             wavesWatcher.watch(wave)
         }
     }
