@@ -11,9 +11,9 @@ abstract class DataCollector<INPUT, OUTPUT, DATA>(
 ) : Collector {
 
     fun getData(battleState: BattleState, bulletSpeed: Double): List<Pair<DATA, Double>>  {
-        val dataPoints = tree.nearestNeighbor(getLocation(battleState), 100, true)!!
+        val dataPoints = tree.nearestNeighbor(getLocation(battleState), 100, true)
         return dataPoints.map {
-            Pair(dataReconsturcor.reconstruct(battleState, it.value!!, bulletSpeed), 1 - (it.distance / dataPoints[0].distance))
+            Pair(dataReconsturcor.reconstruct(battleState, it.value, bulletSpeed), 1 - (it.distance / dataPoints[0].distance))
         }
     }
 

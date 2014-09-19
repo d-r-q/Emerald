@@ -4,6 +4,9 @@
 
 package ags.utils;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -24,16 +27,21 @@ public abstract class KdTree<T> {
 
     // All types
     private final int dimensions;
-    private final KdTree<T> parent;
+	@Nullable
+	private final KdTree<T> parent;
 
     // Root only
-    private final LinkedList<double[]> locationStack;
-    private final Integer sizeLimit;
+	@Nullable
+	private final LinkedList<double[]> locationStack;
+	@Nullable
+	private final Integer sizeLimit;
 
     // Leaf only
-    private double[][] locations;
-    private Object[] data;
-    private int locationCount;
+	@Nullable
+	private double[][] locations;
+	@Nullable
+	private Object[] data;
+	private int locationCount;
 
     // Stem only
     private KdTree<T> left, right;
@@ -51,8 +59,8 @@ public abstract class KdTree<T> {
      * Construct a KdTree with a given number of dimensions and a limit on
      * maxiumum size (after which it throws away old points)
      */
-    private KdTree(int dimensions, Integer sizeLimit) {
-        this.dimensions = dimensions;
+	private KdTree(int dimensions, @Nullable Integer sizeLimit) {
+		this.dimensions = dimensions;
 
         // Init as leaf
         this.locations = new double[bucketSize][];
@@ -73,8 +81,8 @@ public abstract class KdTree<T> {
     /**
      * Constructor for child nodes. Internal use only.
      */
-    private KdTree(KdTree<T> parent) {
-        this.dimensions = parent.dimensions;
+	private KdTree(@NotNull KdTree<T> parent) {
+		this.dimensions = parent.dimensions;
 
         // Init as leaf
         this.locations = new double[Math.max(bucketSize, parent.locationCount)][];
@@ -98,8 +106,8 @@ public abstract class KdTree<T> {
     /**
      * Add a point and associated value to the tree
      */
-    public void addPoint(double[] location, T value) {
-        KdTree<T> cursor = this;
+	public void addPoint(@NotNull double[] location, T value) {
+		KdTree<T> cursor = this;
 
         while (cursor.locations == null || cursor.locationCount >= cursor.locations.length) {
             if (cursor.locations != null) {
@@ -189,8 +197,8 @@ public abstract class KdTree<T> {
     /**
      * Extends the bounds of this node do include a new location
      */
-    private void extendBounds(double[] location) {
-        if (minLimit == null) {
+	private void extendBounds(@NotNull double[] location) {
+		if (minLimit == null) {
             minLimit = new double[dimensions];
             System.arraycopy(location, 0, minLimit, 0, dimensions);
             maxLimit = new double[dimensions];
@@ -265,221 +273,204 @@ public abstract class KdTree<T> {
         // If we got here... we couldn't find the value to remove. Weird...
     }
 
-    /**
-     * Enumeration representing the status of a node during the running
-     */
-    private static enum Status {
-        NONE, LEFTVISITED, RIGHTVISITED, ALLVISITED
-    }
+	/**
+	 * Calculates the nearest 'count' points to 'location'
+	 */
+	@NotNull
+	@SuppressWarnings("unchecked")
+	public List<Entry<T>> nearestNeighbor(double[] location, int count, boolean sequentialSorting) {
+		KdTree<T> cursor = this;
+		cursor.status = Status.NONE;
+		double range = Double.POSITIVE_INFINITY;
+		ResultHeap resultHeap = new ResultHeap(count);
+
+		do {
+			if (cursor.status == Status.ALLVISITED) {
+				// At a fully visited part. Move up the tree
+				cursor = cursor.parent;
+				continue;
+			}
+
+			if (cursor.status == Status.NONE && cursor.locations != null) {
+				// At a leaf. Use the data.
+				if (cursor.locationCount > 0) {
+					if (cursor.singularity) {
+						double dist = pointDist(cursor.locations[0], location);
+						if (dist <= range) {
+							for (int i = 0; i < cursor.locationCount; i++) {
+								resultHeap.addValue(dist, cursor.data[i]);
+							}
+						}
+					} else {
+						for (int i = 0; i < cursor.locationCount; i++) {
+							double dist = pointDist(cursor.locations[i], location);
+							resultHeap.addValue(dist, cursor.data[i]);
+						}
+					}
+					range = resultHeap.getMaxDist();
+				}
+
+				if (cursor.parent == null) {
+					break;
+				}
+				cursor = cursor.parent;
+				continue;
+			}
+
+			// Going to descend
+			KdTree<T> nextCursor = null;
+			if (cursor.status == Status.NONE) {
+				// At a fresh node, descend the most probably useful direction
+				if (location[cursor.splitDimension] > cursor.splitValue) {
+					// Descend right
+					nextCursor = cursor.right;
+					cursor.status = Status.RIGHTVISITED;
+				} else {
+					// Descend left;
+					nextCursor = cursor.left;
+					cursor.status = Status.LEFTVISITED;
+				}
+			} else if (cursor.status == Status.LEFTVISITED) {
+				// Left node visited, descend right.
+				nextCursor = cursor.right;
+				cursor.status = Status.ALLVISITED;
+			} else if (cursor.status == Status.RIGHTVISITED) {
+				// Right node visited, descend left.
+				nextCursor = cursor.left;
+				cursor.status = Status.ALLVISITED;
+			}
+
+			// Check if it's worth descending. Assume it is if it's sibling has
+			// not been visited yet.
+			if (cursor.status == Status.ALLVISITED) {
+				if (nextCursor.locationCount == 0
+						|| (!nextCursor.singularity && pointRegionDist(location, nextCursor.minLimit,
+						nextCursor.maxLimit) > range)) {
+					continue;
+				}
+			}
+
+			// Descend down the tree
+			cursor = nextCursor;
+			cursor.status = Status.NONE;
+		} while (cursor.parent != null || cursor.status != Status.ALLVISITED);
+
+		ArrayList<Entry<T>> results = new ArrayList<Entry<T>>(resultHeap.values);
+		if (sequentialSorting) {
+			while (resultHeap.values > 0) {
+				resultHeap.removeLargest();
+				results.add(new Entry<T>(resultHeap.removedDist, (T) resultHeap.removedData));
+			}
+		} else {
+			for (int i = 0; i < resultHeap.values; i++) {
+				results.add(new Entry<T>(resultHeap.distance[i], (T) resultHeap.data[i]));
+			}
+		}
+
+		return results;
+	}
 
     /**
-     * Stores a distance and value to output
-     */
-    public static class Entry<T> {
-        public final double distance;
-        public final T value;
+	 * Calculates the farthest 'count' points to 'location'.
+	 */
+	@NotNull
+	@SuppressWarnings("unchecked")
+	public List<Entry<T>> farthestNeighbor(double[] location, int count, boolean sequentialSorting) {
+		return farthestNeighbor(location, count, sequentialSorting, Double.POSITIVE_INFINITY);
+	}
 
-        public Entry(double distance, T value) {
-            this.distance = distance;
-            this.value = value;
-        }
-    }
+	@NotNull
+	public List<Entry<T>> farthestNeighbor(double[] location, int count, boolean sequentialSorting, double cutoff) {
+		KdTree<T> cursor = this;
+		cursor.status = Status.NONE;
+		double range = Double.NEGATIVE_INFINITY;
+		ResultHeap resultHeap = new ReverseResultHeap(count);
 
-    /**
-     * Calculates the nearest 'count' points to 'location'
-     */
-    @SuppressWarnings("unchecked")
-    public List<Entry<T>> nearestNeighbor(double[] location, int count, boolean sequentialSorting) {
-        KdTree<T> cursor = this;
-        cursor.status = Status.NONE;
-        double range = Double.POSITIVE_INFINITY;
-        ResultHeap resultHeap = new ResultHeap(count);
+		do {
+			if (cursor.status == Status.ALLVISITED) {
+				// At a fully visited part. Move up the tree
+				cursor = cursor.parent;
+				continue;
+			}
 
-        do {
-            if (cursor.status == Status.ALLVISITED) {
-                // At a fully visited part. Move up the tree
-                cursor = cursor.parent;
-                continue;
-            }
+			if (cursor.status == Status.NONE && cursor.locations != null) {
+				// At a leaf. Use the data.
+				if (cursor.locationCount > 0) {
+					if (cursor.singularity) {
+						double dist = pointDist(cursor.locations[0], location);
+						if (dist >= range) {
+							for (int i = 0; i < cursor.locationCount; i++) {
+								resultHeap.addValue(dist, cursor.data[i]);
+							}
+						}
+					} else {
+						for (int i = 0; i < cursor.locationCount; i++) {
+							double dist = pointDist(cursor.locations[i], location);
+							resultHeap.addValue(dist, cursor.data[i]);
+						}
+					}
+					range = resultHeap.getMaxDist();
+					if (range > cutoff)
+						break;
+				}
 
-            if (cursor.status == Status.NONE && cursor.locations != null) {
-                // At a leaf. Use the data.
-                if (cursor.locationCount > 0) {
-                    if (cursor.singularity) {
-                        double dist = pointDist(cursor.locations[0], location);
-                        if (dist <= range) {
-                            for (int i = 0; i < cursor.locationCount; i++) {
-                                resultHeap.addValue(dist, cursor.data[i]);
-                            }
-                        }
-                    } else {
-                        for (int i = 0; i < cursor.locationCount; i++) {
-                            double dist = pointDist(cursor.locations[i], location);
-                            resultHeap.addValue(dist, cursor.data[i]);
-                        }
-                    }
-                    range = resultHeap.getMaxDist();
-                }
+				if (cursor.parent == null) {
+					break;
+				}
+				cursor = cursor.parent;
+				continue;
+			}
 
-                if (cursor.parent == null) {
-                    break;
-                }
-                cursor = cursor.parent;
-                continue;
-            }
+			// Going to descend
+			KdTree<T> nextCursor = null;
+			if (cursor.status == Status.NONE) {
+				// At a fresh node, descend the most probably useful direction
+				if (location[cursor.splitDimension] < cursor.splitValue) {
+					// Descend right
+					nextCursor = cursor.right;
+					cursor.status = Status.RIGHTVISITED;
+				} else {
+					// Descend left;
+					nextCursor = cursor.left;
+					cursor.status = Status.LEFTVISITED;
+				}
+			} else if (cursor.status == Status.LEFTVISITED) {
+				// Left node visited, descend right.
+				nextCursor = cursor.right;
+				cursor.status = Status.ALLVISITED;
+			} else if (cursor.status == Status.RIGHTVISITED) {
+				// Right node visited, descend left.
+				nextCursor = cursor.left;
+				cursor.status = Status.ALLVISITED;
+			}
 
-            // Going to descend
-            KdTree<T> nextCursor = null;
-            if (cursor.status == Status.NONE) {
-                // At a fresh node, descend the most probably useful direction
-                if (location[cursor.splitDimension] > cursor.splitValue) {
-                    // Descend right
-                    nextCursor = cursor.right;
-                    cursor.status = Status.RIGHTVISITED;
-                } else {
-                    // Descend left;
-                    nextCursor = cursor.left;
-                    cursor.status = Status.LEFTVISITED;
-                }
-            } else if (cursor.status == Status.LEFTVISITED) {
-                // Left node visited, descend right.
-                nextCursor = cursor.right;
-                cursor.status = Status.ALLVISITED;
-            } else if (cursor.status == Status.RIGHTVISITED) {
-                // Right node visited, descend left.
-                nextCursor = cursor.left;
-                cursor.status = Status.ALLVISITED;
-            }
+			// Check if it's worth descending. Assume it is if it's sibling has
+			// not been visited yet.
+			if (cursor.status == Status.ALLVISITED) {
+				if (nextCursor.locationCount == 0
+						|| (!nextCursor.singularity &&
+						pointRegionMaxDist(location, nextCursor.minLimit,
+								nextCursor.maxLimit) < range)) {
+					continue;
+				}
+			}
 
-            // Check if it's worth descending. Assume it is if it's sibling has
-            // not been visited yet.
-            if (cursor.status == Status.ALLVISITED) {
-                if (nextCursor.locationCount == 0
-                        || (!nextCursor.singularity && pointRegionDist(location, nextCursor.minLimit,
-                        nextCursor.maxLimit) > range)) {
-                    continue;
-                }
-            }
+			// Descend down the tree
+			cursor = nextCursor;
+			cursor.status = Status.NONE;
+		} while (cursor.parent != null || cursor.status != Status.ALLVISITED);
 
-            // Descend down the tree
-            cursor = nextCursor;
-            cursor.status = Status.NONE;
-        } while (cursor.parent != null || cursor.status != Status.ALLVISITED);
-
-        ArrayList<Entry<T>> results = new ArrayList<Entry<T>>(resultHeap.values);
-        if (sequentialSorting) {
-            while (resultHeap.values > 0) {
-                resultHeap.removeLargest();
-                results.add(new Entry<T>(resultHeap.removedDist, (T) resultHeap.removedData));
-            }
-        } else {
-            for (int i = 0; i < resultHeap.values; i++) {
-                results.add(new Entry<T>(resultHeap.distance[i], (T) resultHeap.data[i]));
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * Calculates the farthest 'count' points to 'location'.
-     */
-    @SuppressWarnings("unchecked")
-    public List<Entry<T>> farthestNeighbor(double[] location, int count, boolean sequentialSorting) {
-        return farthestNeighbor(location, count, sequentialSorting, Double.POSITIVE_INFINITY);
-    }
-
-    public List<Entry<T>> farthestNeighbor(double[] location, int count, boolean sequentialSorting, double cutoff) {
-        KdTree<T> cursor = this;
-        cursor.status = Status.NONE;
-        double range = Double.NEGATIVE_INFINITY;
-        ResultHeap resultHeap = new ReverseResultHeap(count);
-
-        do {
-            if (cursor.status == Status.ALLVISITED) {
-                // At a fully visited part. Move up the tree
-                cursor = cursor.parent;
-                continue;
-            }
-
-            if (cursor.status == Status.NONE && cursor.locations != null) {
-                // At a leaf. Use the data.
-                if (cursor.locationCount > 0) {
-                    if (cursor.singularity) {
-                        double dist = pointDist(cursor.locations[0], location);
-                        if (dist >= range) {
-                            for (int i = 0; i < cursor.locationCount; i++) {
-                                resultHeap.addValue(dist, cursor.data[i]);
-                            }
-                        }
-                    } else {
-                        for (int i = 0; i < cursor.locationCount; i++) {
-                            double dist = pointDist(cursor.locations[i], location);
-                            resultHeap.addValue(dist, cursor.data[i]);
-                        }
-                    }
-                    range = resultHeap.getMaxDist();
-                    if (range > cutoff)
-                        break;
-                }
-
-                if (cursor.parent == null) {
-                    break;
-                }
-                cursor = cursor.parent;
-                continue;
-            }
-
-            // Going to descend
-            KdTree<T> nextCursor = null;
-            if (cursor.status == Status.NONE) {
-                // At a fresh node, descend the most probably useful direction
-                if (location[cursor.splitDimension] < cursor.splitValue) {
-                    // Descend right
-                    nextCursor = cursor.right;
-                    cursor.status = Status.RIGHTVISITED;
-                } else {
-                    // Descend left;
-                    nextCursor = cursor.left;
-                    cursor.status = Status.LEFTVISITED;
-                }
-            } else if (cursor.status == Status.LEFTVISITED) {
-                // Left node visited, descend right.
-                nextCursor = cursor.right;
-                cursor.status = Status.ALLVISITED;
-            } else if (cursor.status == Status.RIGHTVISITED) {
-                // Right node visited, descend left.
-                nextCursor = cursor.left;
-                cursor.status = Status.ALLVISITED;
-            }
-
-            // Check if it's worth descending. Assume it is if it's sibling has
-            // not been visited yet.
-            if (cursor.status == Status.ALLVISITED) {
-                if (nextCursor.locationCount == 0
-                        || (!nextCursor.singularity &&
-                        pointRegionMaxDist(location, nextCursor.minLimit,
-                                nextCursor.maxLimit) < range)) {
-                    continue;
-                }
-            }
-
-            // Descend down the tree
-            cursor = nextCursor;
-            cursor.status = Status.NONE;
-        } while (cursor.parent != null || cursor.status != Status.ALLVISITED);
-
-        ArrayList<Entry<T>> results = new ArrayList<Entry<T>>(resultHeap.values);
-        if (sequentialSorting) {
-            while (resultHeap.values > 0) {
-                resultHeap.removeLargest();
-                results.add(new Entry<T>(resultHeap.removedDist, (T) resultHeap.removedData));
-            }
-        } else {
-            for (int i = 0; i < resultHeap.values; i++) {
-                results.add(new Entry<T>(resultHeap.distance[i], (T) resultHeap.data[i]));
-            }
-        }
+		ArrayList<Entry<T>> results = new ArrayList<Entry<T>>(resultHeap.values);
+		if (sequentialSorting) {
+			while (resultHeap.values > 0) {
+				resultHeap.removeLargest();
+				results.add(new Entry<T>(resultHeap.removedDist, (T) resultHeap.removedData));
+			}
+		} else {
+			for (int i = 0; i < resultHeap.values; i++) {
+				results.add(new Entry<T>(resultHeap.distance[i], (T) resultHeap.data[i]));
+			}
+		}
 
         return results;
     }
@@ -493,24 +484,137 @@ public abstract class KdTree<T> {
 
     protected double getAxisWeightHint(int i) {
         return 1.0;
-    }
+	}
+
+	/**
+	 * Enumeration representing the status of a node during the running
+	 */
+	private static enum Status {
+		NONE, LEFTVISITED, RIGHTVISITED, ALLVISITED
+	}
+
+	/**
+	 * Stores a distance and value to output
+	 */
+	public static class Entry<T> {
+		public final double distance;
+		public final
+		@NotNull
+		T value;
+
+		public Entry(double distance, @NotNull T value) {
+			this.distance = distance;
+			this.value = value;
+		}
+	}
+
+	/**
+	 * Class for tree with Weighted Squared Euclidean distancing
+	 */
+	public static class WeightedSqrEuclid<T> extends KdTree<T> {
+		private double[] weights;
+
+		public WeightedSqrEuclid(int dimensions, Integer sizeLimit) {
+			super(dimensions, sizeLimit);
+			this.weights = new double[dimensions];
+			Arrays.fill(this.weights, 1.0);
+		}
+
+		public void setWeights(double[] weights) {
+			this.weights = weights;
+		}
+
+		protected double getAxisWeightHint(int i) {
+			return weights[i];
+		}
+
+		protected double pointDist(@NotNull double[] p1, double[] p2) {
+			double d = 0;
+
+			for (int i = 0; i < p1.length; i++) {
+				double diff = (p1[i] - p2[i]) * weights[i];
+				if (!Double.isNaN(diff)) {
+					d += diff * diff;
+				}
+			}
+
+			return d;
+		}
+
+		protected double pointRegionDist(@NotNull double[] point, double[] min, double[] max) {
+			double d = 0;
+
+			for (int i = 0; i < point.length; i++) {
+				double diff = 0;
+				if (point[i] > max[i]) {
+					diff = (point[i] - max[i]) * weights[i];
+				} else if (point[i] < min[i]) {
+					diff = (point[i] - min[i]) * weights[i];
+				}
+
+				if (!Double.isNaN(diff)) {
+					d += diff * diff;
+				}
+			}
+
+			return d;
+		}
+
+		protected double pointRegionMaxDist(@NotNull double[] point, double[] min, double[] max) {
+			double d = 0;
+
+			for (int i = 0; i < point.length; i++) {
+				double diff = Math.max(Math.abs(point[i] - min[i]),
+						Math.abs(max[i] - point[i])) * weights[i];
+
+				if (!Double.isNaN(diff)) {
+					d += diff * diff;
+				}
+			}
+
+			return d;
+		}
+	}
 
     /**
-     * Internal class for child nodes
-     */
-    private class ChildNode extends KdTree<T> {
-        private ChildNode(KdTree<T> parent) {
-            super(parent);
-        }
+	 * Class for tree with Unweighted Squared Euclidean distancing
+	 */
+	public static class SqrEuclid<T> extends KdTree<T> {
+		public SqrEuclid(int dimensions, Integer sizeLimit) {
+			super(dimensions, sizeLimit);
+		}
 
-        // Distance measurements are always called from the root node
-        protected double pointDist(double[] p1, double[] p2) {
-            throw new IllegalStateException();
-        }
+		protected double pointDist(@NotNull double[] p1, double[] p2) {
+			double d = 0;
 
-        protected double pointRegionDist(double[] point, double[] min, double[] max) {
-            throw new IllegalStateException();
-        }
+			for (int i = 0; i < p1.length; i++) {
+				double diff = (p1[i] - p2[i]);
+				if (!Double.isNaN(diff)) {
+					d += diff * diff;
+				}
+			}
+
+			return d;
+		}
+
+		protected double pointRegionDist(@NotNull double[] point, double[] min, double[] max) {
+			double d = 0;
+
+			for (int i = 0; i < point.length; i++) {
+				double diff = 0;
+				if (point[i] > max[i]) {
+					diff = (point[i] - max[i]);
+				} else if (point[i] < min[i]) {
+					diff = (point[i] - min[i]);
+				}
+
+				if (!Double.isNaN(diff)) {
+					d += diff * diff;
+				}
+			}
+
+			return d;
+		}
 
         protected double pointRegionMaxDist(double[] point, double[] min, double[] max) {
             throw new IllegalStateException();
@@ -518,108 +622,52 @@ public abstract class KdTree<T> {
     }
 
     /**
-     * Class for tree with Weighted Squared Euclidean distancing
-     */
-    public static class WeightedSqrEuclid<T> extends KdTree<T> {
-        private double[] weights;
+	 * Class for tree with Weighted Manhattan distancing
+	 */
+	public static class WeightedManhattan<T> extends KdTree<T> {
+		private double[] weights;
 
-        public WeightedSqrEuclid(int dimensions, Integer sizeLimit) {
-            super(dimensions, sizeLimit);
-            this.weights = new double[dimensions];
-            Arrays.fill(this.weights, 1.0);
-        }
+		public WeightedManhattan(int dimensions, Integer sizeLimit) {
+			super(dimensions, sizeLimit);
+			this.weights = new double[dimensions];
+			Arrays.fill(this.weights, 1.0);
+		}
 
-        public void setWeights(double[] weights) {
-            this.weights = weights;
-        }
+		public void setWeights(double[] weights) {
+			this.weights = weights;
+		}
 
-        protected double getAxisWeightHint(int i) {
-            return weights[i];
-        }
+		protected double getAxisWeightHint(int i) {
+			return weights[i];
+		}
 
-        protected double pointDist(double[] p1, double[] p2) {
-            double d = 0;
-
-            for (int i = 0; i < p1.length; i++) {
-                double diff = (p1[i] - p2[i]) * weights[i];
-                if (!Double.isNaN(diff)) {
-                    d += diff * diff;
-                }
-            }
-
-            return d;
-        }
-
-        protected double pointRegionDist(double[] point, double[] min, double[] max) {
-            double d = 0;
-
-            for (int i = 0; i < point.length; i++) {
-                double diff = 0;
-                if (point[i] > max[i]) {
-                    diff = (point[i] - max[i]) * weights[i];
-                } else if (point[i] < min[i]) {
-                    diff = (point[i] - min[i]) * weights[i];
-                }
-
-                if (!Double.isNaN(diff)) {
-                    d += diff * diff;
-                }
-            }
-
-            return d;
-        }
-
-        protected double pointRegionMaxDist(double[] point, double[] min, double[] max) {
-            double d = 0;
-
-            for (int i = 0; i < point.length; i++) {
-                double diff = Math.max(Math.abs(point[i] - min[i]),
-                        Math.abs(max[i] - point[i])) * weights[i];
-
-                if (!Double.isNaN(diff)) {
-                    d += diff * diff;
-                }
-            }
-
-            return d;
-        }
-    }
-
-    /**
-     * Class for tree with Unweighted Squared Euclidean distancing
-     */
-    public static class SqrEuclid<T> extends KdTree<T> {
-        public SqrEuclid(int dimensions, Integer sizeLimit) {
-            super(dimensions, sizeLimit);
-        }
-
-        protected double pointDist(double[] p1, double[] p2) {
-            double d = 0;
+		protected double pointDist(@NotNull double[] p1, double[] p2) {
+			double d = 0;
 
             for (int i = 0; i < p1.length; i++) {
                 double diff = (p1[i] - p2[i]);
                 if (!Double.isNaN(diff)) {
-                    d += diff * diff;
-                }
+					d += ((diff < 0) ? -diff : diff) * weights[i];
+				}
             }
 
             return d;
         }
 
-        protected double pointRegionDist(double[] point, double[] min, double[] max) {
-            double d = 0;
+		protected double pointRegionDist(@NotNull double[] point, double[] min, double[] max) {
+			double d = 0;
 
             for (int i = 0; i < point.length; i++) {
                 double diff = 0;
                 if (point[i] > max[i]) {
                     diff = (point[i] - max[i]);
                 } else if (point[i] < min[i]) {
-                    diff = (point[i] - min[i]);
-                }
+					diff = (min[i] - point[i]);
+				}
 
                 if (!Double.isNaN(diff)) {
-                    d += diff * diff;
-                }
+					d += diff * weights[i];
+				}
             }
 
             return d;
@@ -631,40 +679,28 @@ public abstract class KdTree<T> {
     }
 
     /**
-     * Class for tree with Weighted Manhattan distancing
-     */
-    public static class WeightedManhattan<T> extends KdTree<T> {
-        private double[] weights;
-
-        public WeightedManhattan(int dimensions, Integer sizeLimit) {
-            super(dimensions, sizeLimit);
-            this.weights = new double[dimensions];
-            Arrays.fill(this.weights, 1.0);
+	 * Class for tree with Manhattan distancing
+	 */
+	public static class Manhattan<T> extends KdTree<T> {
+		public Manhattan(int dimensions, Integer sizeLimit) {
+			super(dimensions, sizeLimit);
         }
 
-        public void setWeights(double[] weights) {
-            this.weights = weights;
-        }
-
-        protected double getAxisWeightHint(int i) {
-            return weights[i];
-        }
-
-        protected double pointDist(double[] p1, double[] p2) {
-            double d = 0;
+		protected double pointDist(@NotNull double[] p1, double[] p2) {
+			double d = 0;
 
             for (int i = 0; i < p1.length; i++) {
                 double diff = (p1[i] - p2[i]);
                 if (!Double.isNaN(diff)) {
-                    d += ((diff < 0) ? -diff : diff) * weights[i];
-                }
+					d += (diff < 0) ? -diff : diff;
+				}
             }
 
             return d;
         }
 
-        protected double pointRegionDist(double[] point, double[] min, double[] max) {
-            double d = 0;
+		protected double pointRegionDist(@NotNull double[] point, double[] min, double[] max) {
+			double d = 0;
 
             for (int i = 0; i < point.length; i++) {
                 double diff = 0;
@@ -675,8 +711,8 @@ public abstract class KdTree<T> {
                 }
 
                 if (!Double.isNaN(diff)) {
-                    d += diff * weights[i];
-                }
+					d += diff;
+				}
             }
 
             return d;
@@ -688,67 +724,99 @@ public abstract class KdTree<T> {
     }
 
     /**
-     * Class for tree with Manhattan distancing
-     */
-    public static class Manhattan<T> extends KdTree<T> {
-        public Manhattan(int dimensions, Integer sizeLimit) {
-            super(dimensions, sizeLimit);
-        }
+	 * Class for tracking up to 'size' closest values
+	 */
+	private static class ResultHeap {
+		@NotNull
+		protected final Object[] data;
+		@NotNull
+		protected final double[] distance;
+		protected final int size;
+		public Object removedData;
+		public double removedDist;
+		protected int values;
 
-        protected double pointDist(double[] p1, double[] p2) {
-            double d = 0;
+		public ResultHeap(int size) {
+			this.data = new Object[size];
+			this.distance = new double[size];
+			this.size = size;
+			this.values = 0;
+		}
 
-            for (int i = 0; i < p1.length; i++) {
-                double diff = (p1[i] - p2[i]);
-                if (!Double.isNaN(diff)) {
-                    d += (diff < 0) ? -diff : diff;
-                }
+		public void addValue(double dist, Object value) {
+			// If there is still room in the heap
+			if (values < size) {
+				// Insert new value at the end
+				data[values] = value;
+				distance[values] = dist;
+				upHeapify(values);
+				values++;
+			}
+			// If there is no room left in the heap, and the new entry is lower
+			// than the max entry
+			else if (dist < distance[0]) {
+				// Replace the max entry with the new entry
+				data[0] = value;
+				distance[0] = dist;
+				downHeapify(0);
+			}
+		}
+
+		public void removeLargest() {
+			if (values == 0) {
+				throw new IllegalStateException();
+			}
+
+			removedData = data[0];
+			removedDist = distance[0];
+			values--;
+			data[0] = data[values];
+			distance[0] = distance[values];
+			downHeapify(0);
+		}
+
+		protected void upHeapify(int c) {
+			for (int p = (c - 1) / 2; c != 0 && distance[c] > distance[p]; c = p, p = (c - 1) / 2) {
+				Object pData = data[p];
+				double pDist = distance[p];
+				data[p] = data[c];
+				distance[p] = distance[c];
+				data[c] = pData;
+				distance[c] = pDist;
+			}
+		}
+
+		protected void downHeapify(int p) {
+			for (int c = p * 2 + 1; c < values; p = c, c = p * 2 + 1) {
+				if (c + 1 < values && distance[c] < distance[c + 1]) {
+					c++;
+				}
+				if (distance[p] < distance[c]) {
+					// Swap the points
+					Object pData = data[p];
+					double pDist = distance[p];
+					data[p] = data[c];
+					distance[p] = distance[c];
+					data[c] = pData;
+					distance[c] = pDist;
+				} else {
+					break;
+				}
             }
-
-            return d;
         }
 
-        protected double pointRegionDist(double[] point, double[] min, double[] max) {
-            double d = 0;
-
-            for (int i = 0; i < point.length; i++) {
-                double diff = 0;
-                if (point[i] > max[i]) {
-                    diff = (point[i] - max[i]);
-                } else if (point[i] < min[i]) {
-                    diff = (min[i] - point[i]);
-                }
-
-                if (!Double.isNaN(diff)) {
-                    d += diff;
-                }
-            }
-
-            return d;
-        }
-
-        protected double pointRegionMaxDist(double[] point, double[] min, double[] max) {
-            throw new IllegalStateException();
-        }
+		public double getMaxDist() {
+			if (values < size) {
+				return Double.POSITIVE_INFINITY;
+			}
+			return distance[0];
+		}
     }
 
-    /**
-     * Class for tracking up to 'size' closest values
-     */
-    private static class ResultHeap {
-        protected final Object[] data;
-        protected final double[] distance;
-        protected final int size;
-        protected int values;
-        public Object removedData;
-        public double removedDist;
-
-        public ResultHeap(int size) {
-            this.data = new Object[size];
-            this.distance = new double[size];
-            this.size = size;
-            this.values = 0;
-        }
+	private static class ReverseResultHeap extends ResultHeap {
+		public ReverseResultHeap(int size) {
+			super(size);
+		}
 
         public void addValue(double dist, Object value) {
             // If there is still room in the heap
@@ -759,32 +827,20 @@ public abstract class KdTree<T> {
                 upHeapify(values);
                 values++;
             }
-            // If there is no room left in the heap, and the new entry is lower
-            // than the max entry
-            else if (dist < distance[0]) {
-                // Replace the max entry with the new entry
-                data[0] = value;
+			// If there is no room left in the heap, and the new entry is higher
+			// than the min entry
+			else if (dist > distance[0]) {
+				// Replace the min entry with the new entry
+				data[0] = value;
                 distance[0] = dist;
                 downHeapify(0);
             }
         }
 
-        public void removeLargest() {
-            if (values == 0) {
-                throw new IllegalStateException();
-            }
-
-            removedData = data[0];
-            removedDist = distance[0];
-            values--;
-            data[0] = data[values];
-            distance[0] = distance[values];
-            downHeapify(0);
-        }
 
         protected void upHeapify(int c) {
-            for (int p = (c - 1) / 2; c != 0 && distance[c] > distance[p]; c = p, p = (c - 1) / 2) {
-                Object pData = data[p];
+			for (int p = (c - 1) / 2; c != 0 && distance[c] < distance[p]; c = p, p = (c - 1) / 2) {
+				Object pData = data[p];
                 double pDist = distance[p];
                 data[p] = data[c];
                 distance[p] = distance[c];
@@ -795,11 +851,11 @@ public abstract class KdTree<T> {
 
         protected void downHeapify(int p) {
             for (int c = p * 2 + 1; c < values; p = c, c = p * 2 + 1) {
-                if (c + 1 < values && distance[c] < distance[c + 1]) {
-                    c++;
+				if (c + 1 < values && distance[c] > distance[c + 1]) {
+					c++;
                 }
-                if (distance[p] < distance[c]) {
-                    // Swap the points
+				if (distance[p] > distance[c]) {
+					// Swap the points
                     Object pData = data[p];
                     double pDist = distance[p];
                     data[p] = data[c];
@@ -811,68 +867,27 @@ public abstract class KdTree<T> {
                 }
             }
         }
-
-        public double getMaxDist() {
-            if (values < size) {
-                return Double.POSITIVE_INFINITY;
-            }
-            return distance[0];
-        }
     }
 
-    private static class ReverseResultHeap extends ResultHeap {
-        public ReverseResultHeap(int size) {
-            super(size);
-        }
+	/**
+	 * Internal class for child nodes
+	 */
+	private class ChildNode extends KdTree<T> {
+		private ChildNode(@NotNull KdTree<T> parent) {
+			super(parent);
+		}
 
-        public void addValue(double dist, Object value) {
-            // If there is still room in the heap
-            if (values < size) {
-                // Insert new value at the end
-                data[values] = value;
-                distance[values] = dist;
-                upHeapify(values);
-                values++;
-            }
-            // If there is no room left in the heap, and the new entry is higher
-            // than the min entry
-            else if (dist > distance[0]) {
-                // Replace the min entry with the new entry
-                data[0] = value;
-                distance[0] = dist;
-                downHeapify(0);
-            }
-        }
+		// Distance measurements are always called from the root node
+		protected double pointDist(double[] p1, double[] p2) {
+			throw new IllegalStateException();
+		}
 
+		protected double pointRegionDist(double[] point, double[] min, double[] max) {
+			throw new IllegalStateException();
+		}
 
-        protected void upHeapify(int c) {
-            for (int p = (c - 1) / 2; c != 0 && distance[c] < distance[p]; c = p, p = (c - 1) / 2) {
-                Object pData = data[p];
-                double pDist = distance[p];
-                data[p] = data[c];
-                distance[p] = distance[c];
-                data[c] = pData;
-                distance[c] = pDist;
-            }
-        }
-
-        protected void downHeapify(int p) {
-            for (int c = p * 2 + 1; c < values; p = c, c = p * 2 + 1) {
-                if (c + 1 < values && distance[c] > distance[c + 1]) {
-                    c++;
-                }
-                if (distance[p] > distance[c]) {
-                    // Swap the points
-                    Object pData = data[p];
-                    double pDist = distance[p];
-                    data[p] = data[c];
-                    distance[p] = distance[c];
-                    data[c] = pData;
-                    distance[c] = pDist;
-                } else {
-                    break;
-                }
-            }
-        }
+		protected double pointRegionMaxDist(double[] point, double[] min, double[] max) {
+			throw new IllegalStateException();
+		}
     }
 }
