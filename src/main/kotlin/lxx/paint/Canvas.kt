@@ -34,11 +34,33 @@ enum class Canvas(enabledPropName: String, private val autoReset: Boolean = true
         }
     }
 
-    fun fillRect(x: Double, y: Double, width: Double, height: Double) {
+    fun drawRect(x: Double, y: Double, width: Double, height: Double) {
         if (enabled) {
-            commands.add { g -> g.fillRect(x, y, width, height) }
+            commands.add { g -> g.drawRect(x, y, width, height) }
         }
     }
+
+    fun drawRect(x: Int, y: Int, width: Int, height: Int) {
+        drawRect(x.toDouble(), y.toDouble(), width.toDouble(), height.toDouble())
+    }
+
+    fun fillRect(x: Double, y: Double, width: Double, height: Double, autoReset: Boolean = false) {
+        if (enabled) {
+            commands.add(object : Function1<LxxGraphics, Unit> {
+
+                var invoked = false
+
+                override fun invoke(g: LxxGraphics) {
+                    if (!autoReset || !invoked) {
+                        g.fillRect(x, y, width, height)
+                    }
+                    invoked = true
+                }
+
+            })
+        }
+    }
+
 
     fun draw(g: LxxGraphics) {
         for (cmd in commands) {

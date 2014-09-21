@@ -5,6 +5,8 @@ import robocode.util.Utils
 import java.lang.Math.signum
 import lxx.math.*
 import java.lang.Math.abs
+import lxx.movement.mech.futurePositions
+import lxx.waves.VirtualWave
 
 fun lateralDirection(center: PointLike, robot: LxxRobot) = lateralDirection(center, robot, robot.velocity, robot.heading)
 
@@ -41,6 +43,23 @@ fun getMaxEscapeAngle(attackerPos: PointLike, victim: LxxRobot, bulletSpeed: Dou
     } else {
         return MaxEscapeAngle(possibleMea, -possibleMea)
     }
+}
+
+fun preciseMaxEscapeAngle(attackerPos: PointLike, victim: LxxRobot, bulletSpeed: Double): MaxEscapeAngle {
+    val (cwPoints, ccwPoints) = futurePositions(victim, VirtualWave(victim.time, attackerPos, bulletSpeed), attackerPos.distance(victim))
+    val lateralDirection = lateralDirection(attackerPos, victim)
+    val zeroBearingOffset = attackerPos.angleTo(victim)
+
+    val res =
+            if (lateralDirection >= 0) {
+                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.last ?: victim) - zeroBearingOffset),
+                        Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.last ?: victim) - zeroBearingOffset))
+            } else {
+                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.last ?: victim) - zeroBearingOffset),
+                        Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.last ?: victim) - zeroBearingOffset))
+            }
+
+    return res
 }
 
 fun getStopDistance(speed: Double): Double {

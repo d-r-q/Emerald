@@ -31,6 +31,10 @@ public class LxxGraphics(private val g: Graphics2D) {
         g.drawRect((center.x() - width / 2).toInt(), (center.y() - width / 2).toInt(), width.toInt(), width.toInt())
     }
 
+    public fun drawRect(x: Double, y: Double, width: Double, height: Double) {
+        g.drawRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
+    }
+
     public fun fillRect(x: Double, y: Double, width: Double, height: Double) {
         g.fillRect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
     }

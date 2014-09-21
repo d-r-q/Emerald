@@ -52,6 +52,8 @@ data class LxxRobot(
                 gunHeat = max(0.0, gunHeat - battleRules.gunCoolingRate))
     }
 
+    fun contains(pnt: PointLike) = abs(x - pnt.x()) < battleRules.robotWidth / 2 && abs(y - pnt.y()) < battleRules.robotHeight / 2
+
     override fun equals(other: Any?): Boolean {
         return when (other) {
             is LxxRobot -> name == other.name && time == other.time
@@ -61,6 +63,11 @@ data class LxxRobot(
 
     override fun hashCode(): Int {
         return (name.hashCode() * 31 + time).toInt()
+    }
+
+
+    override fun toString(): String {
+        return "LxxRobot($name, $time)"
     }
 
 }

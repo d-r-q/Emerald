@@ -6,6 +6,7 @@ import lxx.model.PointLike
 import lxx.movement.MovementDecision
 import robocode.util.Utils.*
 import lxx.math.*
+import lxx.waves.Wave
 
 public enum class OrbitDirection(val direction: Int, val speed: Int) {
 
@@ -41,4 +42,21 @@ public class OrbitalMovementMech(val battleField: BattleField, val desiredDistan
         return normalAbsoluteAngle(angleToMe + attackAngle * destination.direction.direction)
     }
 
+}
+
+fun futurePositions(initState: LxxRobot, wave: Wave, desiredDistance: Double): Pair<List<PointLike>, List<PointLike>> {
+    val orbMech = OrbitalMovementMech(initState.battleRules.battleField, desiredDistance)
+    val cwPos = stream(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.CLOCKWISE), orbMech)).
+            takeWhile{!wave.isReached(it)}.
+            toList()
+    val ccwPos = stream(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.COUNTER_CLOCKWISE), orbMech)).
+            takeWhile {!wave.isReached(it)}.
+            toList()
+
+    return Pair(cwPos, ccwPos)
+}
+
+fun pointsGenerator(orbitDestination: OrbitDestination, orbMov: OrbitalMovementMech) = {(robot: LxxRobot) ->
+    val movementDecision = orbMov.getMovementDecision(robot, orbitDestination)
+    robot.apply(movementDecision)
 }

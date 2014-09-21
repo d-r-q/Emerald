@@ -20,7 +20,7 @@ class RealWaveDataCollector<OUTPUT, DATA>(
         private val mode: CollectionMode
 ) : DataCollector<WaveWithOffset, OUTPUT, DATA>(locFormula, dataReconsturcor, tree) {
 
-    private val wavesWatcher = WavesWatcher(observerName, observableName)
+    val wavesWatcher = WavesWatcher(observerName, observableName)
     private val waves = if (mode == CollectionMode.VISITS) wavesWatcher.brokenWavesStream() else wavesWatcher.hitWavesStream()
     private val hitWaves = wavesWatcher.hitWavesStream()
 

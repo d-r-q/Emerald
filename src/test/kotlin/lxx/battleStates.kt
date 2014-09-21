@@ -6,6 +6,32 @@ import robocode.Event
 import lxx.model.BattleStateFactory
 import lxx.events.robocodeEvents
 import robocode.StatusEvent
+import lxx.model.LxxRobot
+
+class BattleStates {
+
+    class object {
+
+        fun defaultState() = BattleStates()
+
+    }
+
+    private var time = 0L
+    private var me = LxxRobot()
+    private var enemy = LxxRobot()
+
+    fun with(time: Long = this.time,
+             me: LxxRobot = this.me,
+             enemy: LxxRobot = this.enemy): BattleStates {
+        this.time = time
+        this.me = me
+        this.enemy = enemy
+        return this
+    }
+
+    fun build() = BattleState(stdRules, time, me, enemy, hashMapOf())
+
+}
 
 fun defaultBattleState(): BattleState {
     val eventsSource = EventsSource<Event>()

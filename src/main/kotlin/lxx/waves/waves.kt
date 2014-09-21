@@ -13,6 +13,8 @@ import lxx.events.allEvents
 import lxx.model.LxxRobot
 import lxx.paint.Canvas
 import lxx.model.PointLike
+import lxx.util.Logger
+import lxx.rc.prettyString
 
 class WavesWatcher(val attackerName: String,
                    val victimName: String) : Collector {
@@ -22,6 +24,7 @@ class WavesWatcher(val attackerName: String,
     private val waveEventsSource = EventsSource<Wave>()
 
     public fun watch(wave: LxxWave) {
+        assert(wavesInAir.none { it == wave })
         wavesInAir += wave
     }
 
@@ -63,49 +66,89 @@ class WavesWatcher(val attackerName: String,
         return hitWaves
     }
 
-    private fun findWave(time: Long, bullet: Bullet) = wavesInAir.firstOrNull() {
-        Utils.isNear(it.speed, bullet.getVelocity()) &&
-                abs(it.travelledDistance(time) - it.attacker.distance(bullet.getX(), bullet.getY())) < bullet.getVelocity()
+    private fun findWave(time: Long, bullet: Bullet): LxxWave? {
+
+        val lxxWave = wavesInAir.firstOrNull() {
+
+            val travelledDistanceThreshold = when (bullet.getVictim()) {
+                null -> it.speed * 2.1
+                else -> (it.speed + bullet.getVelocity()) * 1.1
+            }
+
+            Utils.isNear(it.speed, bullet.getVelocity()) &&
+                    abs(it.travelledDistance(time) - it.attacker.distance(bullet.getX(), bullet.getY())) < travelledDistanceThreshold
+        }
+
+        return lxxWave
     }
 
     private fun generateWave(battleState: BattleState, bullet: Bullet): LxxWave? {
+        Logger.warn({ "Generate wave for bullet ${bullet.prettyString()}" })
         val bulletSpeed = bullet.getVelocity()
         val bulletReverseHeading = Utils.normalAbsoluteAngle(bullet.getHeadingRadians() + RADIANS_180)
         var currentBulletPos = LxxPoint(bullet.getX(), bullet.getY())
 
-        val pastStates = stream(Pair(battleState, currentBulletPos), { Pair(it.first.prevState!!, it.second.project(bulletReverseHeading, bulletSpeed)) })
+        val pastStates = stream(Pair<BattleState?, LxxPoint>(battleState, currentBulletPos), { Pair(it.first?.prevState, it.second.project(bulletReverseHeading, bulletSpeed)) })
         [suppress("UNUSED_VARIABLE")]
         val state = pastStates.takeWhile {
             val (state, bulletPos) = it
-            if (state.prevState == null) {
+            if (state == null) {
                 false
             } else {
                 val nextBulletPos = bulletPos.project(bulletReverseHeading, bulletSpeed)
                 val attcker = state.robotByName(bullet.getName()!!)
-                bulletPos.distance(nextBulletPos) <= bulletPos.distance(attcker) &&
+                bulletPos.distance(attcker) > bulletSpeed &&
                         bulletPos.distance(attcker) > nextBulletPos.distance(attcker)
             }
         }.
                 lastOrNull()
 
         assert(state != null, "Could not find wave")
-        return if (state != null) LxxWave(state.first, attackerName, victimName, bulletSpeed)
+        return if (state != null && state.first != null) LxxWave(state.first!!, attackerName, victimName, bulletSpeed)
         else null
     }
 
 }
 
-abstract class Wave
+trait Wave : PointLike {
 
-data class LxxWave(val battleState: BattleState, attackerName: String, victimName: String, val speed: Double) : Wave() {
+    val time: Long
 
-    val time = battleState.time
+    val speed: Double
+
+    val center: PointLike
+
+    fun travelledDistance(time: Long) = (time - this.time) * speed
+
+    fun isReached(victim: LxxRobot): Boolean {
+        val travelledDistance = travelledDistance(victim.time)
+        return travelledDistance > center.distance(victim) && !victim.contains(center.project(center.angleTo(victim), travelledDistance))
+    }
+
+}
+
+class VirtualWave(override val time: Long,
+                  override val center: PointLike,
+                  override val speed: Double) : Wave {
+
+    override fun x() = center.x()
+
+    override fun y() = center.y()
+
+}
+
+data class LxxWave(val battleState: BattleState,
+                   attackerName: String,
+                   victimName: String,
+                   override val speed: Double) : Wave {
+
     val attacker = battleState.robotByName(attackerName)
     val victim = battleState.robotByName(victimName)
 
-    val zeroBearingOffset = attacker.angleTo(victim)
+    override val time = battleState.time
+    override val center = attacker
 
-    fun travelledDistance(time: Long) = (time - this.time) * speed
+    val zeroBearingOffset = attacker.angleTo(victim)
 
     fun toBearingOffset(absAngle: Double) = Utils.normalRelativeAngle(absAngle - zeroBearingOffset)
 
@@ -115,22 +158,33 @@ data class LxxWave(val battleState: BattleState, attackerName: String, victimNam
         canvas.drawCircle(attacker, travelledDistance(time))
     }
 
-    fun isReached(victim: LxxRobot): Boolean = travelledDistance(victim.time) > attacker.distance(victim)
+    override fun x() = attacker.x
 
+    override fun y() = attacker.y
+
+
+    override fun toString() = "LxxWave(time = $time, pos = (${attacker.x},${attacker.y}, attacker = ${attacker.name}, victim = ${victim.name}, speed = $speed"
 }
 
-abstract class WaveWithOffset : Wave() {
-
-    abstract val wave: LxxWave
+abstract class WaveWithOffset(val wave: LxxWave) : Wave by wave {
 
     abstract val offset: Double
 
+    override fun x() = wave.attacker.x
+
+    override fun y() = wave.attacker.y
+
 }
 
-data class BrokenWave(override val wave: LxxWave, val hitOffset: Double) : WaveWithOffset() {
+data class BrokenWave(wave: LxxWave, val hitOffset: Double) : WaveWithOffset(wave) {
+
     override val offset = hitOffset
-}
 
-data class HitWave(override val wave: LxxWave, val fireOffset: Double) : WaveWithOffset() {
+    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $hitOffset"
+}
+data class HitWave(wave: LxxWave, val fireOffset: Double) : WaveWithOffset(wave) {
+
     override val offset = fireOffset
+
+    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $fireOffset"
 }

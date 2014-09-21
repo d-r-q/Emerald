@@ -2,7 +2,6 @@ package lxx.movement
 
 import lxx.analysis.Collector
 import lxx.model.BattleState
-import lxx.waves.WavesWatcher
 import lxx.model.BattleRules
 import lxx.waves.LxxWave
 import robocode.Rules
@@ -19,21 +18,17 @@ import lxx.analysis.RealWaveDataCollector.CollectionMode
 import lxx.analysis.Profile
 import lxx.model.PointLike
 import lxx.movement.mech.OrbitalMovementMech
-import lxx.movement.mech.OrbitDestination
-import lxx.movement.mech.OrbitDirection
 import lxx.movement.mech.GoToMovementMech
 import java.util.HashMap
+import lxx.movement.mech.futurePositions
 
 public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Movement {
-
-    private val wavesWatcher = WavesWatcher(battleRules.enemyName, battleRules.myName)
-    private val passedWaves = wavesWatcher.brokenWavesStream()
 
     private val orbMov = OrbitalMovementMech(battleRules.battleField, 800.0)
 
     private val goToMov = GoToMovementMech()
 
-    private val destinations: HashMap<LxxWave, PointLike> = hashMapOf()
+    private val destinations: HashMap<LxxWave, Pair<PointLike, Profile>> = hashMapOf()
 
     class object {
 
@@ -55,66 +50,63 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
 
     private val dataCollector = RealWaveDataCollector(locFormula, WaveGfReconstructor(battleRules.enemyName, battleRules.myName), tree, battleRules.enemyName, battleRules.myName, CollectionMode.HITS)
 
+    private val passedWaves = dataCollector.wavesWatcher.brokenWavesStream()
+
     override fun getMovementDecision(battleState: BattleState): MovementDecision {
-        val wave = wavesWatcher.wavesInAir.first
-        val dest =
-                if (wave == null) battleRules.battleField.center
+        val wave = dataCollector.wavesWatcher.wavesInAir.first
+
+
+        val (dest, profile) =
+                if (wave == null) Pair(battleRules.battleField.center, Profile(listOf(), 0.0, 0.0))
                 else destinations.getOrPut(wave, { destination(battleState, wave) })
+
+        if ( wave != null) {
+            Canvas.ENEMY_WAVES.setColor(Color.WHITE)
+            wave.paint(Canvas.ENEMY_WAVES, battleState.time)
+            profile.drawCurrentBo(Canvas.MY_MOVEMENT_PROFILE, wave.toBearingOffset(battleState.me))
+        }
 
         return goToMov.getMovementDecision(battleState.me, dest)
     }
 
     override fun collectData(battleState: BattleState) {
         dataCollector.collectData(battleState)
-        wavesWatcher.collectData(battleState)
         passedWaves.forEach { destinations.remove(it) }
-
-        if (battleState.enemy.firePower != null && battleState.enemy.firePower > 0.0) {
-            wavesWatcher.watch(LxxWave(battleState.prevState!!, battleRules.enemyName, battleRules.myName, Rules.getBulletSpeed(battleState.enemy.firePower)))
-        }
     }
 
-    private fun destination(currentState: BattleState, wave: LxxWave): PointLike {
-        val bulletSpeed = Rules.getBulletSpeed(wave.speed)
-        val data = dataCollector.getData(wave.battleState, bulletSpeed)
-        val mea = lxx.model.getMaxEscapeAngle(wave.attacker, wave.victim, bulletSpeed)
-        val profile = Profile(DoubleArray(191), mea.minAngle, mea.maxAngle)
+    private fun destination(currentState: BattleState, wave: LxxWave): Pair<PointLike, Profile> {
+        val data = dataCollector.getData(wave.battleState, wave.speed)
+        val mea = wave.battleState.preciseMaxEscapeAngle(wave.victim, wave.speed)
+        val profile = Profile(data, mea.minAngle, mea.maxAngle, width = 35)
 
-        data.forEach {
-            profile.addScore(it.first, it.second, 15)
+        val (cwPoints, ccwPoints) = futurePositions(currentState.me, wave, 800.0)
+
+        val canvas = Canvas.PREDICTED_POSITIONS
+        if (canvas.enabled) {
+            canvas.reset()
+
+            canvas.setColor(Color.BLUE)
+            cwPoints.forEach { canvas.drawCircle(it, 2.0) }
+
+            canvas.setColor(Color.GREEN)
+            ccwPoints.forEach { canvas.drawCircle(it, 2.0) }
+
         }
 
-        fun pointDanger(pnt: PointLike) = profile.bearingOffsetDanger(wave.toBearingOffset(pnt))
-        val dest = calculateFuturePositions(currentState, wave).minBy { pointDanger(it) }!!
-        Canvas.PREDICTED_POSITIONS.setColor(Color.RED)
-        Canvas.PREDICTED_POSITIONS.drawCircle(dest, 3.0)
+        canvas.setColor(Color(255, 200, 0, 155))
+        val (wcw, wccw) = futurePositions(wave.victim, wave, wave.distance(wave.victim))
+        (wcw + wccw).forEach { canvas.drawCircle(it, 2.0) }
 
         profile.drawProfile(Canvas.MY_MOVEMENT_PROFILE)
+        profile.drawCurrentBo(Canvas.MY_MOVEMENT_PROFILE, wave.toBearingOffset(currentState.me))
 
-        return dest
-    }
+        fun pointDanger(pnt: PointLike) = profile.bearingOffsetDanger(wave.toBearingOffset(pnt))
+        val dest = (cwPoints + ccwPoints).minBy { pointDanger(it) }!!
 
-    private fun calculateFuturePositions(battleState: BattleState, wave: LxxWave): Stream<PointLike> {
-        Canvas.PREDICTED_POSITIONS.reset()
-        val cwPos = stream(battleState.me, pointsGenerator(OrbitDestination(battleState.enemy.prevState!!, OrbitDirection.CLOCKWISE))).
-                takeWhile {
-                    Canvas.PREDICTED_POSITIONS.setColor(Color.BLUE)
-                    Canvas.PREDICTED_POSITIONS.fillCircle(it, 2.0)
-                    !wave.isReached(it)
-                }
-        val ccwPos = stream(battleState.me, pointsGenerator(OrbitDestination(battleState.enemy.prevState, OrbitDirection.COUNTER_CLOCKWISE))).
-                takeWhile {
-                    Canvas.PREDICTED_POSITIONS.setColor(Color.GREEN)
-                    Canvas.PREDICTED_POSITIONS.fillCircle(it, 2.0)
-                    !wave.isReached(it)
-                }
+        canvas.setColor(Color.RED)
+        canvas.drawCircle(dest, 3.0)
 
-        return cwPos + ccwPos
-    }
-
-    fun pointsGenerator(orbitDestination: OrbitDestination) = {(robot: LxxRobot) ->
-        val movementDecision = orbMov.getMovementDecision(robot, orbitDestination)
-        robot.apply(movementDecision)
+        return Pair(dest, profile)
     }
 
 }

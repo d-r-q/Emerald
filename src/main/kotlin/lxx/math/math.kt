@@ -1,6 +1,5 @@
 package lxx.math
 
-import lxx.math.QuickMath
 import java.awt.geom.Point2D
 import java.lang.Math.*
 import robocode.util.Utils.*
@@ -36,5 +35,7 @@ fun angle(baseX: Double, baseY: Double, x: Double, y: Double): Double {
 fun anglesDiff(alpha1 : Double, alpha2 : Double) = abs(normalRelativeAngle(alpha1 - alpha2))
 
 fun limit(min: Double, x: Double, max: Double) = Math.min(Math.max(x, min), max)
+
+fun limit(min: Int, x: Int, max: Int) = Math.min(Math.max(x, min), max)
 
 fun isNear(val1: Double, val2: Double, epsilon: Double) = abs(val1 - val2) < epsilon

@@ -14,6 +14,7 @@ import java.lang.Math.abs
 import lxx.paint.Canvas
 import lxx.analysis.RealWaveDataCollector
 import lxx.analysis.RealWaveDataCollector.CollectionMode
+import java.awt.Color
 
 class MainGun(val myName: String, val enemyName: String) : Collector {
 
@@ -42,6 +43,9 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
 
     public fun getTurnDecision(battleState: BattleState): GunDecision {
 
+        Canvas.MY_WAVES.setColor(Color(0, 255, 55, 155))
+        dataCollector.wavesWatcher.wavesInAir.forEach { it.paint(Canvas.MY_WAVES, battleState.time) }
+
         firePower = selectFirePower(battleState)
 
         val fireAngle: Double
@@ -67,12 +71,10 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
     private fun selectFirePower([suppress("UNUSED_PARAMETER")] battleState: BattleState) = 1.95
 
     private fun getProfile(battleState: BattleState, bulletSpeed: Double): Profile {
-        val mea = lxx.model.getMaxEscapeAngle(battleState.me, battleState.enemy, bulletSpeed)
-        val profile = Profile(DoubleArray(191), mea.minAngle, mea.maxAngle)
+        val data = dataCollector.getData(battleState, bulletSpeed)
 
-        dataCollector.getData(battleState, bulletSpeed).forEach {
-            profile.addScore(it.first, it.second)
-        }
+        val mea = battleState.preciseMaxEscapeAngle(battleState.enemy, bulletSpeed)
+        val profile = Profile(data, mea.minAngle, mea.maxAngle)
 
         return profile
     }

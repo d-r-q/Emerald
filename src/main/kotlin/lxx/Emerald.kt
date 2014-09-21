@@ -130,6 +130,7 @@ open class Emerald : AdvancedRobot() {
                         true
                     }
                 } catch (t: Throwable) {
+                    System.err.println("Time: " + getTime())
                     t.printStackTrace()
                 }
 

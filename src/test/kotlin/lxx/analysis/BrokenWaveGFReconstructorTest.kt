@@ -7,59 +7,66 @@ import robocode.Rules
 import lxx.stdRules
 import lxx.math.*
 import lxx.model.*
-import kotlin.test.assertTrue
-import kotlin.test.assertEquals
-import lxx.defaultBattleState
+import lxx.BattleStates
+import junit.framework.Assert
 
 class BrokenWaveGFReconstructorTest {
 
     val dataCollector = WaveGfReconstructor(stdRules.myName, stdRules.enemyName)
 
-    val attacker = LxxRobotBuilder(x = 0.0, y = 0.0, name = stdRules.myName).build(stdRules)
+    val attacker = LxxRobotBuilder(x = 400.0, y = 300.0, name = stdRules.myName).build(stdRules)
 
     [Test]
     fun testReconstruct() {
         val bulletSpeed = Rules.getBulletSpeed(0.1)
-        val victim = LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_90, velocity = Rules.MAX_VELOCITY, name = stdRules.enemyName).build(stdRules)
+        testVictimReconstruct(bulletSpeed, LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_0, velocity = Rules.MAX_VELOCITY, name = stdRules.enemyName).build(stdRules))
+        testVictimReconstruct(bulletSpeed, LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_180, velocity = Rules.MAX_VELOCITY, name = stdRules.enemyName).build(stdRules))
+    }
+
+    private fun testVictimReconstruct(bulletSpeed: Double, victim: LxxRobot) {
         val battleState = BattleState(stdRules, 0, attacker, victim, mapOf())
 
-        val mea = getMaxEscapeAngle(attacker, victim, bulletSpeed)
+        val mea = preciseMaxEscapeAngle(attacker, victim, bulletSpeed)
 
         var bo = dataCollector.reconstruct(battleState, 1.0, bulletSpeed)
-        assertEquals(mea.forward, bo)
+        Assert.assertEquals(mea.forward, bo)
 
         bo = dataCollector.reconstruct(battleState, 0.5, bulletSpeed)
-        assertEquals(0.0, bo)
+        Assert.assertEquals(0.0, bo, 0.1)
 
         bo = dataCollector.reconstruct(battleState, 0.0, bulletSpeed)
-        assertEquals(mea.backward, bo)
+        Assert.assertEquals(mea.backward, bo)
     }
 
     [Test]
     fun testDestruct() {
         val bulletSpeed = Rules.getBulletSpeed(0.1)
 
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_90, velocity = Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_90, velocity = -Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_90, velocity = Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_90, velocity = -Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
 
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_180, velocity = Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_180, velocity = -Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_180, velocity = Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_180, velocity = -Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
 
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_270, velocity = Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
-        testVictim(LxxRobotBuilder(x = 0.0, y = 300.0, heading = RADIANS_270, velocity = -Rules.MAX_VELOCITY).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_270, velocity = Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
+        testVictimDestruct(LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_270, velocity = -Rules.MAX_VELOCITY, time = 0).build(stdRules), bulletSpeed)
     }
 
-    private fun testVictim(victim: LxxRobot, bulletSpeed: Double) {
-        val mea = getMaxEscapeAngle(attacker, victim, bulletSpeed)
+    private fun testVictimDestruct(victim: LxxRobot, bulletSpeed: Double) {
+        val mea = preciseMaxEscapeAngle(attacker, victim, bulletSpeed)
+        val bs = BattleStates.defaultState().with(
+                time = 3,
+                me = attacker,
+                enemy = victim).
+                build()
+        var gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.forward))
+        Assert.assertEquals(1.0, gf)
 
-        var gf = dataCollector.destruct(BrokenWave(LxxWave(defaultBattleState(), attacker.name, victim.name, bulletSpeed), mea.forward))
-        assertTrue(gf == 1.0)
+        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), 0.0))
+        Assert.assertEquals(0.5, gf, 0.2)
 
-        gf = dataCollector.destruct(BrokenWave(LxxWave(defaultBattleState(), attacker.name, victim.name, bulletSpeed), 0.0))
-        assertTrue(gf == 0.5)
-
-        gf = dataCollector.destruct(BrokenWave(LxxWave(defaultBattleState(), attacker.name, victim.name, bulletSpeed), mea.backward))
-        assertTrue(gf == 0.0)
+        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.backward))
+        Assert.assertEquals(0.0, gf)
     }
 
 }
