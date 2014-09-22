@@ -21,10 +21,13 @@ import lxx.movement.mech.OrbitalMovementMech
 import lxx.movement.mech.GoToMovementMech
 import java.util.HashMap
 import lxx.movement.mech.futurePositions
+import lxx.movement.mech.OrbitDestination
+import lxx.movement.mech.OrbitDirection
+import robocode.util.Utils
 
 public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Movement {
 
-    private val orbMov = OrbitalMovementMech(battleRules.battleField, 800.0)
+    private val orbMov = OrbitalMovementMech(battleRules.battleField, 300.0)
 
     private val goToMov = GoToMovementMech()
 
@@ -56,17 +59,30 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
         val wave = dataCollector.wavesWatcher.wavesInAir.first
 
 
-        val (dest, profile) =
-                if (wave == null) Pair(battleRules.battleField.center, Profile(listOf(), 0.0, 0.0))
-                else destinations.getOrPut(wave, { destination(battleState, wave) })
+        if (wave != null) {
+            val (dest, profile) = destinations.getOrPut(wave, { destination(battleState, wave) })
 
-        if ( wave != null) {
             Canvas.ENEMY_WAVES.setColor(Color.WHITE)
             wave.paint(Canvas.ENEMY_WAVES, battleState.time)
             profile.drawCurrentBo(Canvas.MY_MOVEMENT_PROFILE, wave.toBearingOffset(battleState.me))
+
+            return goToMov.getMovementDecision(battleState.me, dest)
+
+        } else {
+
+            val bf = battleState.battleField
+            val dir = {
+                val curAngle = bf.center.angleTo(battleState.me)
+                val desiredAngle = Utils.normalAbsoluteAngle(bf.center.angleTo(battleState.enemy) + lxx.math.RADIANS_180)
+                val anglesDiff = Utils.normalRelativeAngle(desiredAngle - curAngle)
+                if (abs(anglesDiff) < lxx.math.RADIANS_10) OrbitDirection.STOP
+                else if (anglesDiff < 0.0) OrbitDirection.COUNTER_CLOCKWISE
+                else if (anglesDiff > 0.0) OrbitDirection.CLOCKWISE
+                else throw IllegalArgumentException("anglesDiff = $anglesDiff")
+            }
+            return orbMov.getMovementDecision(battleState.me, OrbitDestination(bf.center, dir()))
         }
 
-        return goToMov.getMovementDecision(battleState.me, dest)
     }
 
     override fun collectData(battleState: BattleState) {
