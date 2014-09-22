@@ -50,7 +50,7 @@ enum class Canvas(enabledPropName: String, private val autoReset: Boolean = true
 
                 var invoked = false
 
-                override fun invoke(g: LxxGraphics) {
+                override fun invoke([suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")] g: LxxGraphics) {
                     if (!autoReset || !invoked) {
                         g.fillRect(x, y, width, height)
                     }
