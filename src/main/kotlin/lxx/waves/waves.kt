@@ -146,6 +146,8 @@ trait Wave : PointLike {
         return travelledDistance > center.distance(victim) && !victim.contains(center.project(center.angleTo(victim), travelledDistance))
     }
 
+    fun flightTime(robot: LxxRobot) = (distance(robot) - travelledDistance(robot.time)) / speed
+
 }
 
 class VirtualWave(override val time: Long,

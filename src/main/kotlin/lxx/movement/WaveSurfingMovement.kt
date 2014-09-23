@@ -60,7 +60,9 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
     private val passedWaves = wavesWatcher.brokenWavesStream()
 
     override fun getMovementDecision(battleState: BattleState): MovementDecision {
-        val wave = wavesWatcher.wavesInAir.first
+        val wave = wavesWatcher.wavesInAir.
+                sortBy { it.flightTime(battleState.me) }.
+                firstOrNull { it.flightTime(battleState.me) > 3 }
 
         if (wave != null) {
             val (dest, profile) = destinations.getOrPut(wave, { destination(battleState, wave) })
