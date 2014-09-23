@@ -12,9 +12,9 @@ import robocode.util.Utils
 import lxx.model.advancingVelocity
 import java.lang.Math.abs
 import lxx.paint.Canvas
-import lxx.analysis.RealWaveDataCollector
-import lxx.analysis.RealWaveDataCollector.CollectionMode
+import lxx.analysis.WaveDataCollector
 import java.awt.Color
+import lxx.waves.RealWavesWatcher
 
 class MainGun(val myName: String, val enemyName: String) : Collector {
 
@@ -39,12 +39,14 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
 
     }
 
-    private val dataCollector = RealWaveDataCollector(locFormula, WaveGfReconstructor(myName, enemyName), tree, myName, enemyName, CollectionMode.VISITS)
+    private val wavesWatcher = RealWavesWatcher(myName, enemyName)
+
+    private val dataCollector = WaveDataCollector(locFormula, WaveGfReconstructor(myName, enemyName), tree, myName, enemyName, wavesWatcher.brokenWavesStream())
 
     public fun getTurnDecision(battleState: BattleState): GunDecision {
 
         Canvas.MY_WAVES.setColor(Color(0, 255, 55, 155))
-        dataCollector.wavesWatcher.wavesInAir.forEach { it.paint(Canvas.MY_WAVES, battleState.time) }
+        wavesWatcher.wavesInAir.forEach { it.paint(Canvas.MY_WAVES, battleState.time) }
 
         firePower = selectFirePower(battleState)
 
@@ -65,6 +67,7 @@ class MainGun(val myName: String, val enemyName: String) : Collector {
     }
 
     override public fun collectData(battleState: BattleState) {
+        wavesWatcher.collectData(battleState)
         dataCollector.collectData(battleState)
     }
 

@@ -15,22 +15,16 @@ import lxx.paint.Canvas
 import lxx.model.PointLike
 import lxx.util.Logger
 import lxx.rc.prettyString
+import robocode.Rules
 
 class WavesWatcher(val attackerName: String,
-                   val victimName: String) : Collector {
+                   val victimName: String,
+                   val detectWave: (BattleState) -> LxxWave?) : Collector {
 
     var wavesInAir: List<LxxWave> = ArrayList()
+        get() = ArrayList($wavesInAir)
 
     private val waveEventsSource = EventsSource<Wave>()
-
-    public fun watch(wave: LxxWave) {
-        assert(wavesInAir.none { it == wave })
-        wavesInAir += wave
-    }
-
-    public fun brokenWavesStream(): Stream<BrokenWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<BrokenWave>())
-
-    public fun hitWavesStream(): Stream<HitWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<HitWave>())
 
     public override fun collectData(battleState: BattleState) {
         val (inAir, broken) = getBrokenWaves(battleState)
@@ -41,6 +35,20 @@ class WavesWatcher(val attackerName: String,
         }
 
         getHitWaves(battleState).forEach { waveEventsSource.pushEvent(it) }
+
+        val w = detectWave(battleState)
+        if (w != null) {
+            watch(w)
+        }
+    }
+
+    public fun brokenWavesStream(): Stream<BrokenWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<BrokenWave>())
+
+    public fun hitWavesStream(): Stream<HitWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<HitWave>())
+
+    private fun watch(wave: LxxWave) {
+        assert(wavesInAir.none { it == wave })
+        wavesInAir += wave
     }
 
     private fun getBrokenWaves(battleState: BattleState): Pair<List<LxxWave>, List<BrokenWave>> {
@@ -108,6 +116,19 @@ class WavesWatcher(val attackerName: String,
         else null
     }
 
+}
+
+fun RealWavesWatcher(observer: String, observable: String): WavesWatcher {
+    val realWavesDetector = {(bs: BattleState) ->
+        val attacker = bs.robotByName(observer)
+        if (attacker.firePower != null && attacker.firePower > 0.0) {
+            LxxWave(bs.prevState!!, observer, observable, Rules.getBulletSpeed(attacker.firePower))
+        } else {
+            null
+        }
+    }
+
+    return WavesWatcher(observer, observable, realWavesDetector)
 }
 
 trait Wave : PointLike {

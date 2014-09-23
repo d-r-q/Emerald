@@ -12,9 +12,8 @@ import lxx.model.LxxRobot
 import java.lang.Math.abs
 import lxx.model.lateralVelocity
 import lxx.model.advancingVelocity
-import lxx.analysis.RealWaveDataCollector
+import lxx.analysis.WaveDataCollector
 import lxx.analysis.WaveGfReconstructor
-import lxx.analysis.RealWaveDataCollector.CollectionMode
 import lxx.analysis.Profile
 import lxx.model.PointLike
 import lxx.movement.mech.OrbitalMovementMech
@@ -24,6 +23,7 @@ import lxx.movement.mech.futurePositions
 import lxx.movement.mech.OrbitDestination
 import lxx.movement.mech.OrbitDirection
 import robocode.util.Utils
+import lxx.waves.RealWavesWatcher
 
 public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Movement {
 
@@ -51,13 +51,16 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
 
     }
 
-    private val dataCollector = RealWaveDataCollector(locFormula, WaveGfReconstructor(battleRules.enemyName, battleRules.myName), tree, battleRules.enemyName, battleRules.myName, CollectionMode.HITS)
+    private val wavesWatcher = RealWavesWatcher(battleRules.enemyName, battleRules.myName)
 
-    private val passedWaves = dataCollector.wavesWatcher.brokenWavesStream()
+    private val dataCollector = WaveDataCollector(locFormula,
+            WaveGfReconstructor(battleRules.enemyName, battleRules.myName),
+            tree, battleRules.enemyName, battleRules.myName, wavesWatcher.hitWavesStream())
+
+    private val passedWaves = wavesWatcher.brokenWavesStream()
 
     override fun getMovementDecision(battleState: BattleState): MovementDecision {
-        val wave = dataCollector.wavesWatcher.wavesInAir.first
-
+        val wave = wavesWatcher.wavesInAir.first
 
         if (wave != null) {
             val (dest, profile) = destinations.getOrPut(wave, { destination(battleState, wave) })
@@ -86,6 +89,7 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
     }
 
     override fun collectData(battleState: BattleState) {
+        wavesWatcher.collectData(battleState)
         dataCollector.collectData(battleState)
         passedWaves.forEach { destinations.remove(it) }
     }

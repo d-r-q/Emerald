@@ -4,42 +4,25 @@ import lxx.model.BattleState
 import java.awt.Color
 import lxx.waves.LxxWave
 import lxx.paint.Canvas
-import lxx.waves.WavesWatcher
-import robocode.Rules
 import lxx.model.LxxRobot
 import ags.utils.KdTree
-import lxx.analysis.RealWaveDataCollector.CollectionMode
 import lxx.waves.WaveWithOffset
 
-class RealWaveDataCollector<OUTPUT, DATA>(
+class WaveDataCollector<OUTPUT, DATA>(
         locFormula: (LxxRobot, LxxRobot) -> DoubleArray,
         dataReconsturcor: DataReconstructor<WaveWithOffset, OUTPUT, DATA>,
         tree: KdTree<OUTPUT>,
         private val observerName: String,
         private val observableName: String,
-        private val mode: CollectionMode
+        private val waves: Stream<WaveWithOffset>
 ) : DataCollector<WaveWithOffset, OUTPUT, DATA>(locFormula, dataReconsturcor, tree) {
 
-    val wavesWatcher = WavesWatcher(observerName, observableName)
-    private val waves = if (mode == CollectionMode.VISITS) wavesWatcher.brokenWavesStream() else wavesWatcher.hitWavesStream()
-    private val hitWaves = wavesWatcher.hitWavesStream()
-
     override fun collectData(battleState: BattleState) {
-        wavesWatcher.collectData(battleState)
 
         waves.forEach {
             tree.addPoint(getLocation(battleState), dataReconsturcor.destruct(it))
         }
 
-        val attacker = battleState.robotByName(observerName)
-        val victim = battleState.robotByName(observableName)
-        assert(attacker.prevState != null)
-        assert(victim.prevState != null)
-
-        if (attacker.firePower != null && attacker.firePower > 0.0) {
-            val wave = LxxWave(battleState.prevState!!, observerName, observableName, Rules.getBulletSpeed(attacker.firePower))
-            wavesWatcher.watch(wave)
-        }
     }
 
     protected override fun getLocation(battleState: BattleState) =
@@ -54,11 +37,6 @@ class RealWaveDataCollector<OUTPUT, DATA>(
             }
         }
 
-    }
-
-    enum class CollectionMode {
-        VISITS
-        HITS
     }
 
 }
