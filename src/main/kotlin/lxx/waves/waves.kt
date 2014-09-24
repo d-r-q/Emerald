@@ -16,6 +16,8 @@ import lxx.model.PointLike
 import lxx.util.Logger
 import lxx.rc.prettyString
 import robocode.Rules
+import java.awt.Color
+import java.util.HashSet
 
 class WavesWatcher(val attackerName: String,
                    val victimName: String,
@@ -23,6 +25,8 @@ class WavesWatcher(val attackerName: String,
 
     var wavesInAir: List<LxxWave> = ArrayList()
         get() = ArrayList($wavesInAir)
+
+    private var wavesWithoutBullets = HashSet<Wave>()
 
     private val waveEventsSource = EventsSource<Wave>()
 
@@ -32,19 +36,35 @@ class WavesWatcher(val attackerName: String,
 
         broken.forEach {
             waveEventsSource.pushEvent(it)
+            wavesWithoutBullets.remove(it.wave)
         }
 
-        getHitWaves(battleState).forEach { waveEventsSource.pushEvent(it) }
+        getGoneBullets(battleState).forEach {
+            waveEventsSource.pushEvent(it)
+        }
 
         val w = detectWave(battleState)
         if (w != null) {
             watch(w)
         }
+
+        val canvas = if (battleState.me.name == attackerName) Canvas.MY_WAVES else Canvas.ENEMY_WAVES
+        wavesInAir.forEach {
+            val color = if (wavesWithoutBullets.contains(it)) Color.WHITE else Color(255, 0, 55, 155)
+            canvas.setColor(color)
+            it.paint(canvas, battleState.time)
+        }
+
     }
 
     public fun brokenWavesStream(): Stream<BrokenWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<BrokenWave>())
 
     public fun hitWavesStream(): Stream<HitWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<HitWave>())
+
+    public fun bulletsStream(): Stream<WaveWithOffset> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<WaveWithOffset>()).
+            filter {
+                it is HitWave || it is BrokenWave && it.hasBullet
+            }
 
     private fun watch(wave: LxxWave) {
         assert(wavesInAir.none { it == wave })
@@ -55,19 +75,20 @@ class WavesWatcher(val attackerName: String,
         val (coming, passed) = wavesInAir.partition { !it.isReached(battleState.robotByName(it.victim.name)) }
 
         val broken = passed.map {
-            BrokenWave(it, it.toBearingOffset(it.attacker.angleTo(battleState.robotByName(it.victim.name))))
+            BrokenWave(it, it.toBearingOffset(it.attacker.angleTo(battleState.robotByName(it.victim.name))), !wavesWithoutBullets.contains(it))
         }
 
         return Pair(coming, broken)
     }
 
-    private fun getHitWaves(battleState: BattleState): List<HitWave> {
+    private fun getGoneBullets(battleState: BattleState): List<WaveWithOffset> {
         var hitWaves: List<HitWave> = ArrayList()
         battleState.detectedBullets[attackerName]?.forEach {
             val wave = findWave(battleState.time, it) ?:
                     generateWave(battleState, it)
             if (wave != null) {
-                hitWaves += HitWave(wave, wave.toBearingOffset(it.getHeadingRadians()))
+                hitWaves += HitWave(wave, wave.toBearingOffset(it.getHeadingRadians()), it.getVictim() != null)
+                wavesWithoutBullets.add(wave)
             }
         }
 
@@ -189,9 +210,7 @@ data class LxxWave(val battleState: BattleState,
     override fun toString() = "LxxWave(time = $time, pos = (${attacker.x},${attacker.y}, attacker = ${attacker.name}, victim = ${victim.name}, speed = $speed"
 }
 
-abstract class WaveWithOffset(val wave: LxxWave) : Wave by wave {
-
-    abstract val offset: Double
+abstract class WaveWithOffset(val wave: LxxWave, val offset: Double) : Wave by wave {
 
     override fun x() = wave.attacker.x
 
@@ -199,15 +218,15 @@ abstract class WaveWithOffset(val wave: LxxWave) : Wave by wave {
 
 }
 
-data class BrokenWave(wave: LxxWave, val hitOffset: Double) : WaveWithOffset(wave) {
+open data class BrokenWave(wave: LxxWave, robotOffset: Double, val hasBullet: Boolean) : WaveWithOffset(wave, robotOffset) {
 
-    override val offset = hitOffset
-
-    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $hitOffset"
+    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $offset)"
 }
-data class HitWave(wave: LxxWave, val fireOffset: Double) : WaveWithOffset(wave) {
 
-    override val offset = fireOffset
+data class HitWave(wave: LxxWave,
+                   bulletOffset: Double,
+                   val hitRobot: Boolean) : WaveWithOffset(wave, bulletOffset) {
 
-    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $fireOffset"
+    override fun toString() = "HitWave(wave = ${wave.toString()}, offset = $offset)"
+
 }

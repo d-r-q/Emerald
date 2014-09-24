@@ -82,6 +82,11 @@ fun getAcceleratedSpeed(speed: Double): Double {
 
 fun returnedEnergy(bulletPower: Double): Double = 3 * bulletPower
 
+// speed = 20 - 3 * firepower
+// -3 * firepower = speed - 20
+// firepower = (20 - speed) / 3
+fun bulletPower(bulletSpeed: Double) = (20.0 - bulletSpeed) / 3.0
+
 fun newVelocity(currentVelocity: Double, desiredVelocity: Double): Double {
     if (currentVelocity == 0.0 || signum(currentVelocity) == signum(desiredVelocity)) {
         val desiredAcceleration = abs(desiredVelocity) - abs(currentVelocity)

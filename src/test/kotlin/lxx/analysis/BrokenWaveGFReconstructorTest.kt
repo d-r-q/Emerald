@@ -8,7 +8,7 @@ import lxx.stdRules
 import lxx.math.*
 import lxx.model.*
 import lxx.BattleStates
-import junit.framework.Assert
+import org.junit.Assert
 
 class BrokenWaveGFReconstructorTest {
 
@@ -29,13 +29,13 @@ class BrokenWaveGFReconstructorTest {
         val mea = preciseMaxEscapeAngle(attacker, victim, bulletSpeed)
 
         var bo = dataCollector.reconstruct(battleState, 1.0, bulletSpeed)
-        Assert.assertEquals(mea.forward, bo)
+        Assert.assertEquals(mea.forward, bo, 0.1)
 
         bo = dataCollector.reconstruct(battleState, 0.5, bulletSpeed)
         Assert.assertEquals(0.0, bo, 0.1)
 
         bo = dataCollector.reconstruct(battleState, 0.0, bulletSpeed)
-        Assert.assertEquals(mea.backward, bo)
+        Assert.assertEquals(mea.backward, bo, 0.1)
     }
 
     [Test]
@@ -59,14 +59,14 @@ class BrokenWaveGFReconstructorTest {
                 me = attacker,
                 enemy = victim).
                 build()
-        var gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.forward))
-        Assert.assertEquals(1.0, gf)
+        var gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.forward, false))
+        Assert.assertEquals(1.0, gf, 0.2)
 
-        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), 0.0))
+        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), 0.0, false))
         Assert.assertEquals(0.5, gf, 0.2)
 
-        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.backward))
-        Assert.assertEquals(0.0, gf)
+        gf = dataCollector.destruct(BrokenWave(LxxWave(bs, attacker.name, victim.name, bulletSpeed), mea.backward, false))
+        Assert.assertEquals(0.0, gf, 0.2)
     }
 
 }

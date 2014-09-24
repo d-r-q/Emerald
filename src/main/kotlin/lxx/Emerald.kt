@@ -25,6 +25,9 @@ import java.awt.Graphics2D
 import robocode.PaintEvent
 import lxx.math.QuickMath
 import lxx.movement.WaveSurfingMovement
+import lxx.waves.RealWavesWatcher
+import lxx.util.Debugger
+import lxx.stat.Stat
 
 open class Emerald : AdvancedRobot() {
 
@@ -76,11 +79,23 @@ open class Emerald : AdvancedRobot() {
         private val collectors: List<Collector>
 
         {
-            val mainGun = MainGun(battleRules.myName, battleRules.enemyName)
+            val myWavesWatcher = RealWavesWatcher(battleRules.myName, battleRules.enemyName)
+
+            val debugger = object : Debugger {
+                override fun debugProperty(name: String, value: String) {
+                    setDebugProperty(name, value)
+                }
+            }
+
+            val stat = Stat(myWavesWatcher.bulletsStream(), debugger)
+
+            val mainGun = MainGun(battleRules.myName, battleRules.enemyName, myWavesWatcher, stat)
             val waveSurfingMovement = WaveSurfingMovement(battleRules)
             val duelStrategy = DuelStrategy(mainGun, waveSurfingMovement)
+
+
             strategies = listOf(FindEnemyStrategy(), duelStrategy, WinStrategy())
-            collectors = listOf(mainGun, waveSurfingMovement)
+            collectors = listOf(mainGun, waveSurfingMovement, stat)
         }
 
         private val eventsSource = EventsSource<Event>()

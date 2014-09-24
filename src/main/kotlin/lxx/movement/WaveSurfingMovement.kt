@@ -35,18 +35,14 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
 
     class object {
 
-        val dimensions = 5
-        val tree = KdTree.SqrEuclid<Double>(dimensions, 35000)
+        val tree = KdTree.SqrEuclid<Double>(5, 1200)
 
-        val locFormula: (LxxRobot, LxxRobot) -> DoubleArray = {(observer: LxxRobot, observable: LxxRobot) ->
-            val res = DoubleArray(dimensions)
-            res[0] = (observable.acceleration + 2) / 3 * 2
-            res[1] = abs(lateralVelocity(observer, observable)) / Rules.MAX_VELOCITY * 4
-            res[2] = advancingVelocity(observer, observable) / Rules.MAX_VELOCITY * 3
-            res[3] = observer.distance(observable) / 800
-            res[4] = observable.distanceToForwardWall() / 800 * 2
-
-            res
+        val locFormula = {(observer: LxxRobot, observable: LxxRobot) ->
+            doubleArray(observable.acceleration + 2 / 3 * 2,
+                    abs(lateralVelocity(observer, observable)) / Rules.MAX_VELOCITY * 4,
+                    advancingVelocity(observer, observable) / Rules.MAX_VELOCITY * 3,
+                    observer.distance(observable) / 800,
+                    observable.distanceToForwardWall() / 800 * 2)
         }
 
     }
@@ -67,8 +63,6 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
         if (wave != null) {
             val (dest, profile) = destinations.getOrPut(wave, { destination(battleState, wave) })
 
-            Canvas.ENEMY_WAVES.setColor(Color.WHITE)
-            wave.paint(Canvas.ENEMY_WAVES, battleState.time)
             profile.drawCurrentBo(Canvas.MY_MOVEMENT_PROFILE, wave.toBearingOffset(battleState.me))
 
             return goToMov.getMovementDecision(battleState.me, dest)
