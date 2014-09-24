@@ -22,7 +22,7 @@ class MainGun(private val myName: String,
               private val wavesWatcher: WavesWatcher,
               private val stat: Stat) : Collector {
 
-    private val minFirePower = 0.1
+    private val minFirePower = 0.45
 
     private var profile: Profile? = null
     private var firePower: Double? = null
@@ -87,7 +87,11 @@ class MainGun(private val myName: String,
 
         val firePower = min(twoHitsPower, min(hitRateFirePower, killFirePower))
 
-        return if (firePower >= minFirePower) firePower else minFirePower
+        // see http://robowiki.net/wiki/Archived_talk:Diamond/Version_History_20110905#1.5.5
+        val buggyFirePowers = doubleArray(0.45, 0.65, 1.15, 1.45, 1.65, 1.95, 2.15, 2.65)
+        val xx5FirePower = buggyFirePowers.reverse().minBy { abs(firePower - it) }!!
+
+        return if (xx5FirePower >= minFirePower) xx5FirePower else minFirePower
     }
 
     private fun getProfile(battleState: BattleState, bulletSpeed: Double): Profile {

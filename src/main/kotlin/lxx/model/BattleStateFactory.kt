@@ -16,6 +16,7 @@ import robocode.util.Utils
 import robocode.Rules
 import robocode.HitRobotEvent
 import lxx.util.Logger
+import robocode.SkippedTurnEvent
 
 class BattleStateFactory(private val eventsSource: Stream<Any>, private val battleRules: BattleRules, val time: Long) {
 
@@ -104,13 +105,15 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
                     myNewState.takenDamage += battleRules.hitRobotDamage
                     enemyNewState.takenDamage += battleRules.hitRobotDamage
                 }
+
+                is SkippedTurnEvent -> Logger.warn({ "${event.getSkippedTurn()} tutn skipped" })
             }
         }
 
         assert(time >= 0)
 
-        if (enemyNewState.time > enemyPrevState.time + 1) {
-            Logger.warn({ "Scipped scans: ${enemyNewState.time - enemyPrevState.time - 1}" })
+        if (enemyNewState.alive && enemyNewState.time < myNewState.time) {
+            Logger.warn({ "Scipped scan: ${myNewState.time}" })
         }
 
         myPrevState = myNewState.build(battleRules)
