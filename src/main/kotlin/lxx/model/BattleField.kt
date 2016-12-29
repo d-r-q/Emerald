@@ -42,14 +42,14 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         bottom = Wall(WallType.BOTTOM, RADIANS_180, RADIANS_90, RADIANS_270, availableRightBottom, availableLeftBottom)
         left = Wall(WallType.LEFT, RADIANS_270, RADIANS_180, RADIANS_360, availableLeftBottom, availableLeftTop)
 
-        val bottomY = 0
+        val bottomY = 0.0
         val topY = battleFieldHeight
-        val leftX = 0
+        val leftX = 0.0
         val rightX = battleFieldWidth
 
-        leftTop = LxxPoint(leftX.toDouble(), topY.toDouble())
-        rightTop = LxxPoint(rightX.toDouble(), topY.toDouble())
-        rightBottom = LxxPoint(rightX.toDouble(), bottomY.toDouble())
+        leftTop = LxxPoint(leftX, topY)
+        rightTop = LxxPoint(rightX, topY)
+        rightBottom = LxxPoint(rightX, bottomY)
 
         center = LxxPoint(rightX / 2, topY / 2)
     }
@@ -78,7 +78,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
             } else {
                 return left
             }
-        } else if (heading < RADIANS_360) {
+        } else if (heading <= RADIANS_360) {
             val leftTopTg = (leftTop.y - pos.y()) / pos.x()
             if (normalHeadingTg < leftTopTg) {
                 return left
@@ -93,16 +93,16 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
     fun getDistanceToWall(wall: Wall, pnt: PointLike): Double {
         when (wall.wallType) {
             WallType.TOP -> {
-                return availableTopY.toDouble() - pnt.y()
+                return availableTopY - pnt.y()
             }
             WallType.RIGHT -> {
-                return availableRightX.toDouble() - pnt.x()
+                return availableRightX - pnt.x()
             }
             WallType.BOTTOM -> {
-                return pnt.y() - availableBottomY.toDouble()
+                return pnt.y() - availableBottomY
             }
             WallType.LEFT -> {
-                return pnt.x() - availableLeftX.toDouble()
+                return pnt.x() - availableLeftX
             }
             else -> {
                 throw IllegalArgumentException("Unknown wallType: " + wall.wallType)

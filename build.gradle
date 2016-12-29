@@ -3,7 +3,7 @@ apply plugin: 'kotlin'
 
 final rcAnnotationsDir = 'annotations/rc-runtime'
 
-version = '0.6.2'
+version = '0.6.3'
 group = 'lxx'
 
 jar.archiveName = "${group}.${name}_${version}.jar"
