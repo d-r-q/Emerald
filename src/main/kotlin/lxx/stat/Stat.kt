@@ -9,14 +9,14 @@ import lxx.waves.HitWave
 import lxx.waves.BrokenWave
 import lxx.util.Debugger
 
-class Stat(val myWavesStream: Stream<WaveWithOffset>, val debugger: Debugger) : Collector {
+class Stat(val myWavesStream: Sequence<WaveWithOffset>, val debugger: Debugger) : Collector {
 
-    private val locFormula = {(observer: LxxRobot, observable: LxxRobot) ->
-        doubleArray(observer.distance(observable) / 800,
+    private val locFormula = {observer: LxxRobot, observable: LxxRobot ->
+        doubleArrayOf(observer.distance(observable) / 800,
                 observable.distanceToForwardWall() / 800)
     }
 
-    class object {
+    companion object {
         private val tree = KdTree.SqrEuclid<Double>(2, 1200)
     }
 

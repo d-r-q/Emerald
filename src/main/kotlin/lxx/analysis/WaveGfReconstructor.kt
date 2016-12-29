@@ -25,37 +25,41 @@ class WaveGfReconstructor(
             else -> throw IllegalArgumentException("Unexpected input offset ${input.offset}")
         }
 
-        assert(guessFactor >= 0, "Guess factor ($guessFactor) is less than 0, hit offset = ${input.offset}, " +
-                "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}")
+        assert(guessFactor >= 0, {
+            "Guess factor ($guessFactor) is less than 0, hit offset = ${input.offset}, " +
+                    "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}"
+        })
 
-        assert(guessFactor <= 2, "Guess factor ($guessFactor) is greater than 1, hit offset = ${input.offset}, " +
-                "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}")
+        assert(guessFactor <= 2, {
+            "Guess factor ($guessFactor) is greater than 1, hit offset = ${input.offset}, " +
+                    "mea.backward = ${maxEscapeAngle.backward}, mea.forward = ${maxEscapeAngle.forward}, mea.length = ${maxEscapeAngle.length()}"
+        })
+
 
         return limit(0.0, guessFactor, 1.0)
     }
 
-    [suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")]
-    override fun reconstruct(battleState: BattleState, guessFactor: Double, bulletSpeed: Double): Double {
-        assert(guessFactor >= 0.0 && guessFactor <= 1.0, "Guess factor = $guessFactor")
+    override fun reconstruct(battleState: BattleState, output: Double, bulletSpeed: Double): Double {
+        assert(output >= 0.0 && output <= 1.0, {"Guess factor = $output"})
 
         val attacker = battleState.robotByName(observerName)
         val victim = battleState.robotByName(observableName)
         val maxEscapeAngle = battleState.preciseMaxEscapeAngle(victim, bulletSpeed)
         val zeroOffset = attacker.angleTo(victim)
         val bearingOffset = when {
-            guessFactor == STOP_GF -> 0.0
-            guessFactor > STOP_GF -> maxEscapeAngle.forward * ((guessFactor - STOP_GF) / MAX_SIDE_GF)
-            guessFactor < STOP_GF -> maxEscapeAngle.backward * ((STOP_GF - guessFactor) / MAX_SIDE_GF)
-            else -> throw IllegalArgumentException("Unexpected guess factor $guessFactor")
+            output == STOP_GF -> 0.0
+            output > STOP_GF -> maxEscapeAngle.forward * ((output - STOP_GF) / MAX_SIDE_GF)
+            output < STOP_GF -> maxEscapeAngle.backward * ((STOP_GF - output) / MAX_SIDE_GF)
+            else -> throw IllegalArgumentException("Unexpected guess factor $output")
         }
 
-        assert(bearingOffset >= maxEscapeAngle.minAngle - 0.01, "Bearing offset ($bearingOffset) is less than maxEscapeAngle, guessFactor=$guessFactor, " +
+        assert(bearingOffset >= maxEscapeAngle.minAngle - 0.01, {"Bearing offset ($bearingOffset) is less than maxEscapeAngle, guessFactor=$output, " +
                 "mea.length=${maxEscapeAngle.length()}, mea.forward=${maxEscapeAngle.forward}, mea.backward=${maxEscapeAngle.backward}, " +
-                "zeroOffset=$zeroOffset")
+                "zeroOffset=$zeroOffset"})
 
-        assert(bearingOffset <= maxEscapeAngle.maxAngle + 0.01, "Bearing offset ($bearingOffset) is grater than maxEscapeAngle, guessFactor=$guessFactor, " +
+        assert(bearingOffset <= maxEscapeAngle.maxAngle + 0.01, {"Bearing offset ($bearingOffset) is grater than maxEscapeAngle, guessFactor=$output, " +
                 "mea.length=${maxEscapeAngle.length()}, mea.forward=${maxEscapeAngle.forward}, mea.backward=${maxEscapeAngle.backward}, " +
-                "zeroOffset=$zeroOffset")
+                "zeroOffset=$zeroOffset"})
 
         return limit(maxEscapeAngle.minAngle, bearingOffset, maxEscapeAngle.maxAngle)
     }

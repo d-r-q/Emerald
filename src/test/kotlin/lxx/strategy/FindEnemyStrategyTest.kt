@@ -1,12 +1,12 @@
 package lxx.strategy
 
 import org.junit.Test
-import kotlin.test.assertTrue
 import lxx.defaultBattleState
+import org.junit.Assert.assertTrue
 
 class FindEnemyStrategyTest {
 
-    [Test]
+    @Test
     fun testFindEnemy() {
         val strategy = FindEnemyStrategy()
         assertTrue(strategy.matches(defaultBattleState()))

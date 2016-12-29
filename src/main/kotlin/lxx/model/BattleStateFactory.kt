@@ -18,7 +18,7 @@ import robocode.HitRobotEvent
 import lxx.util.Logger
 import robocode.SkippedTurnEvent
 
-class BattleStateFactory(private val eventsSource: Stream<Any>, private val battleRules: BattleRules, val time: Long) {
+class BattleStateFactory(private val eventsSource: Sequence<Any>, private val battleRules: BattleRules, val time: Long) {
 
     private var myPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
     private var enemyPrevState = LxxRobotBuilder().with(newTime = time).build(battleRules)
@@ -27,78 +27,78 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
     fun getNewState(): BattleState {
 
         val detectedBullets = HashMap<String, ArrayList<Bullet>>()
-        var myNewState = LxxRobotBuilder(myPrevState)
-        var enemyNewState = LxxRobotBuilder(enemyPrevState)
+        val myNewState = LxxRobotBuilder(myPrevState)
+        val enemyNewState = LxxRobotBuilder(enemyPrevState)
         var time = 0L
 
-        val newEmptyArray = {() -> ArrayList<Bullet>() }
+        val newEmptyArray = { -> ArrayList<Bullet>() }
 
         for (event in eventsSource) {
             when (event) {
 
                 is StatusEvent -> {
-                    val status = event.getStatus()!!
+                    val status = event.status!!
                     myNewState.with(
-                            newEnergy = status.getEnergy(),
+                            newEnergy = status.energy,
                             newName = battleRules.myName,
-                            newTime = event.getTime(),
-                            newLastScanTime = event.getTime(),
-                            newX = status.getX(),
-                            newY = status.getY(),
-                            newVelocity = status.getVelocity(),
-                            newHeading = status.getHeadingRadians(),
-                            newGunHeading = status.getGunHeadingRadians(),
-                            newRadarHeading = status.getRadarHeadingRadians(),
-                            newGunHeat = status.getGunHeat()
+                            newTime = event.time,
+                            newLastScanTime = event.time,
+                            newX = status.x,
+                            newY = status.y,
+                            newVelocity = status.velocity,
+                            newHeading = status.headingRadians,
+                            newGunHeading = status.gunHeadingRadians,
+                            newRadarHeading = status.radarHeadingRadians,
+                            newGunHeat = status.gunHeat
                     )
-                    time = event.getTime()
+                    time = event.time
                 }
 
                 is ScannedRobotEvent -> {
-                    val enemyNewPos = myNewState.project(Utils.normalAbsoluteAngle(myNewState.heading + event.getBearingRadians()), event.getDistance())
+                    val enemyNewPos = myNewState.project(Utils.normalAbsoluteAngle(myNewState.heading + event.bearingRadians), event.distance)
                     enemyNewState.with(
-                            newEnergy = event.getEnergy(),
-                            newName = event.getName()!!,
+                            newEnergy = event.energy,
+                            newName = event.name!!,
                             newAlive = true,
-                            newTime = event.getTime(),
-                            newLastScanTime = event.getTime(),
+                            newTime = event.time,
+                            newLastScanTime = event.time,
                             newX = enemyNewPos.x,
                             newY = enemyNewPos.y,
-                            newVelocity = event.getVelocity(),
-                            newHeading = event.getHeadingRadians()
+                            newVelocity = event.velocity,
+                            newHeading = event.headingRadians
                     )
                 }
 
-                is FireEvent -> myNewState.with(newFirePower = event.bullet?.getPower())
+                is FireEvent -> myNewState.with(newFirePower = event.bullet?.power)
 
-                is DeathEvent -> myNewState.with(newAlive = false, newLastScanTime = event.getTime())
+                is DeathEvent -> myNewState.with(newAlive = false, newLastScanTime = event.time)
 
-                is RobotDeathEvent -> enemyNewState.with(newAlive = false, newTime = event.getTime(), newLastScanTime = event.getTime())
+                is RobotDeathEvent -> enemyNewState.with(newAlive = false, newTime = event.time, newLastScanTime = event.time)
 
                 is BulletHitEvent -> {
-                    val bullet = event.getBullet()!!
-                    detectedBullets.getOrPut(bullet.getName()!!, newEmptyArray).add(bullet)
+                    val bullet = event.bullet!!
+                    detectedBullets.getOrPut(bullet.name!!, newEmptyArray).add(bullet)
 
-                    val dmg = Rules.getBulletDamage(bullet.getPower())
+                    val dmg = Rules.getBulletDamage(bullet.power)
                     enemyNewState.takenDamage += dmg
-                    myNewState.givenDamage += returnedEnergy(bullet.getPower())
+                    myNewState.givenDamage += returnedEnergy(bullet.power)
                 }
 
                 is HitByBulletEvent -> {
-                    val bullet = event.getBullet()!!
-                    detectedBullets.getOrPut(bullet.getName()!!, newEmptyArray).add(bullet)
+                    val bullet = event.bullet!!
+                    detectedBullets.getOrPut(bullet.name!!, newEmptyArray).add(bullet)
 
-                    val dmg = Rules.getBulletDamage(bullet.getPower())
-                    enemyNewState.givenDamage += returnedEnergy(bullet.getPower())
+                    val dmg = Rules.getBulletDamage(bullet.power)
+                    enemyNewState.givenDamage += returnedEnergy(bullet.power)
                     myNewState.takenDamage += dmg
                 }
 
                 is BulletHitBulletEvent -> {
-                    val bullet = event.getBullet()!!
-                    detectedBullets.getOrPut(bullet.getName()!!, newEmptyArray).add(bullet)
+                    val bullet = event.bullet!!
+                    detectedBullets.getOrPut(bullet.name!!, newEmptyArray).add(bullet)
 
-                    val hitBullet = event.getHitBullet()!!
-                    detectedBullets.getOrPut(hitBullet.getName()!!, newEmptyArray).add(hitBullet)
+                    val hitBullet = event.hitBullet!!
+                    detectedBullets.getOrPut(hitBullet.name!!, newEmptyArray).add(hitBullet)
                 }
 
                 is HitRobotEvent -> {
@@ -106,7 +106,7 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
                     enemyNewState.takenDamage += battleRules.hitRobotDamage
                 }
 
-                is SkippedTurnEvent -> Logger.warn({ "${event.getSkippedTurn()} tutn skipped" })
+                is SkippedTurnEvent -> Logger.warn({ "${event.skippedTurn} tutn skipped" })
             }
         }
 
@@ -121,8 +121,8 @@ class BattleStateFactory(private val eventsSource: Stream<Any>, private val batt
 
         assert(!enemyPrevState.x.isNaN())
         assert(!enemyPrevState.y.isNaN())
-        assert(enemyPrevState.gunHeat >= 0, "Enemy gun heat = ${enemyPrevState.gunHeat}")
-        assert(enemyPrevState.gunHeat <= battleRules.initialGunHeat, "Enemy gun heat = ${enemyPrevState.gunHeat}")
+        assert(enemyPrevState.gunHeat >= 0, {"Enemy gun heat = ${enemyPrevState.gunHeat}"})
+        assert(enemyPrevState.gunHeat <= battleRules.initialGunHeat, {"Enemy gun heat = ${enemyPrevState.gunHeat}"})
 
         prevBattleState = BattleState(battleRules, time, myPrevState, enemyPrevState, detectedBullets, prevBattleState)
         return prevBattleState!!

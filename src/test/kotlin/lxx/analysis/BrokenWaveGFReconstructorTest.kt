@@ -16,7 +16,7 @@ class BrokenWaveGFReconstructorTest {
 
     val attacker = LxxRobotBuilder(x = 400.0, y = 300.0, name = stdRules.myName).build(stdRules)
 
-    [Test]
+    @Test
     fun testReconstruct() {
         val bulletSpeed = Rules.getBulletSpeed(0.1)
         testVictimReconstruct(bulletSpeed, LxxRobotBuilder(x = stdRules.robotWidth, y = 300.0, heading = RADIANS_0, velocity = Rules.MAX_VELOCITY, name = stdRules.enemyName).build(stdRules))
@@ -38,7 +38,7 @@ class BrokenWaveGFReconstructorTest {
         Assert.assertEquals(mea.backward, bo, 0.1)
     }
 
-    [Test]
+    @Test
     fun testDestruct() {
         val bulletSpeed = Rules.getBulletSpeed(0.1)
 

@@ -3,7 +3,7 @@ package lxx.movement
 import lxx.model.BattleState
 import lxx.movement.mech.GoToMovementMech
 
-public class StayAtCenterMovement : Movement {
+class StayAtCenterMovement : Movement {
 
     private val movementMech = GoToMovementMech()
 

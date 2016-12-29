@@ -27,12 +27,12 @@ class MainGun(private val myName: String,
     private var profile: Profile? = null
     private var firePower: Double? = null
 
-    class object {
+    companion object {
 
         val tree = KdTree.SqrEuclid<Double>(5, 1200)
 
-        val locFormula = {(observer: LxxRobot, observable: LxxRobot) ->
-            doubleArray(observable.acceleration + 2 / 3 * 2,
+        val locFormula = {observer: LxxRobot, observable: LxxRobot ->
+            doubleArrayOf(observable.acceleration + 2 / 3 * 2,
                     abs(lateralVelocity(observer, observable)) / Rules.MAX_VELOCITY * 4,
                     advancingVelocity(observer, observable) / Rules.MAX_VELOCITY * 3,
                     observer.distance(observable) / 800,
@@ -43,7 +43,7 @@ class MainGun(private val myName: String,
 
     private val dataCollector = WaveDataCollector(locFormula, WaveGfReconstructor(myName, enemyName), tree, myName, enemyName, wavesWatcher.brokenWavesStream())
 
-    public fun getTurnDecision(battleState: BattleState): GunDecision {
+    fun getTurnDecision(battleState: BattleState): GunDecision {
 
         firePower = selectFirePower(battleState)
 
@@ -63,7 +63,7 @@ class MainGun(private val myName: String,
         return GunDecision(Utils.normalRelativeAngle(fireAngle - battleState.me.gunHeading), firePower)
     }
 
-    override public fun collectData(battleState: BattleState) {
+    override fun collectData(battleState: BattleState) {
         wavesWatcher.collectData(battleState)
         dataCollector.collectData(battleState)
     }
@@ -88,8 +88,8 @@ class MainGun(private val myName: String,
         val firePower = min(twoHitsPower, min(hitRateFirePower, killFirePower))
 
         // see http://robowiki.net/wiki/Archived_talk:Diamond/Version_History_20110905#1.5.5
-        val buggyFirePowers = doubleArray(0.45, 0.65, 1.15, 1.45, 1.65, 1.95, 2.15, 2.65)
-        val xx5FirePower = buggyFirePowers.reverse().minBy { abs(firePower - it) }!!
+        val buggyFirePowers = doubleArrayOf(0.45, 0.65, 1.15, 1.45, 1.65, 1.95, 2.15, 2.65)
+        val xx5FirePower = buggyFirePowers.reversedArray().minBy { abs(firePower - it) }!!
 
         return if (xx5FirePower >= minFirePower) xx5FirePower else minFirePower
     }

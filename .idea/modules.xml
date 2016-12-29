@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Emerald.iml" filepath="$PROJECT_DIR$/Emerald.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Emerald.iml" filepath="$PROJECT_DIR$/.idea/modules/Emerald.iml" />
     </modules>
   </component>
 </project>
-

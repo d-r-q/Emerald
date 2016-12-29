@@ -1,12 +1,12 @@
 package lxx.model
 
 import org.junit.Test
-import kotlin.test.assertTrue
 import lxx.defaultBattleState
+import org.junit.Assert.assertTrue
 
 class BattleStateFactoryTest {
 
-    [Test]
+    @Test
     fun testBattleStateFactory() {
         val newState = defaultBattleState()
         assertTrue(newState.me.x == 0.0)

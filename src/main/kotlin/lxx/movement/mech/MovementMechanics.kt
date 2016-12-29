@@ -3,7 +3,7 @@ package lxx.movement.mech
 import lxx.model.LxxRobot
 import lxx.movement.MovementDecision
 
-public trait MovementMechanics<DESTINATION> {
+interface MovementMechanics<DESTINATION> {
 
     fun getMovementDecision(me: LxxRobot, destination: DESTINATION): MovementDecision
 

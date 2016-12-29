@@ -26,12 +26,12 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
     private val rightTop: LxxPoint
     private val rightBottom: LxxPoint
 
-    public val availableRect: Rectangle = Rectangle(availableLeftX.toInt(), availableBottomY.toInt(),
+    val availableRect: Rectangle = Rectangle(availableLeftX.toInt(), availableBottomY.toInt(),
             (battleFieldWidth - robotHalfSize * 2).toInt(), (battleFieldHeight - robotHalfSize * 2).toInt())
 
     val center: LxxPoint
 
-    {
+    init {
         val availableLeftBottom = LxxPoint(availableLeftX, availableBottomY)
         val availableLeftTop = LxxPoint(availableLeftX, availableTopY)
         val availableRightTop = LxxPoint(availableRightX, availableTopY)
@@ -55,7 +55,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
     }
 
     // this method is called very often, so keep it optimal
-    public fun getWall(pos: PointLike, heading: Double): Wall {
+    fun getWall(pos: PointLike, heading: Double): Wall {
         val normalHeadingTg = QuickMath.tan(heading % RADIANS_90)
         if (heading < RADIANS_90) {
             val rightTopTg = (rightTop.x - pos.x()) / (rightTop.y - pos.y())
@@ -90,7 +90,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         throw IllegalArgumentException("Invalid heading: " + heading)
     }
 
-    public fun getDistanceToWall(wall: Wall, pnt: PointLike): Double {
+    fun getDistanceToWall(wall: Wall, pnt: PointLike): Double {
         when (wall.wallType) {
             WallType.TOP -> {
                 return availableTopY.toDouble() - pnt.y()
@@ -110,7 +110,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         }
     }
 
-    public fun smoothWalls(pnt: PointLike, desiredHeading: Double, isClockwise: Boolean): Double {
+    fun smoothWalls(pnt: PointLike, desiredHeading: Double, isClockwise: Boolean): Double {
         if (noSmoothX.contains(pnt.x()) && noSmoothY.contains(pnt.y())) {
             return desiredHeading
         }
@@ -118,7 +118,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         return smoothWall(getWall(pnt, desiredHeading), pnt, desiredHeading, isClockwise)
     }
 
-    public fun notNearWall(robotPos: PointLike): Boolean =
+    fun notNearWall(robotPos: PointLike): Boolean =
             robotPos.x() > availableLeftX && robotPos.x() < availableRightX &&
                     robotPos.y() > availableBottomY && robotPos.y() < availableTopY
 
@@ -141,7 +141,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
         return smoothWall(secondWall, pnt, smoothedAngle, isClockwise)
     }
 
-    private inner data class Wall(
+    inner class Wall(
             val wallType: WallType,
             val fromCenterAngle: Double,
             val counterClockwiseAngle: Double,
@@ -149,7 +149,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
             val ccwPoint: LxxPoint,
             val cwPoint: LxxPoint) {
 
-        public fun cwWall(): Wall = when (wallType) {
+        fun cwWall(): Wall = when (wallType) {
             WallType.TOP -> right
             WallType.RIGHT -> bottom
             WallType.BOTTOM -> left
@@ -157,7 +157,7 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
             else -> throw AssertionError("Unknown wall from center angle: ${fromCenterAngle}")
         }
 
-        public fun ccwWall(): Wall = when (wallType) {
+        fun ccwWall(): Wall = when (wallType) {
             WallType.TOP -> left
             WallType.RIGHT -> top
             WallType.BOTTOM -> right
@@ -167,11 +167,11 @@ data class BattleField(val battleFieldWidth: Double, val battleFieldHeight: Doub
 
     }
 
-    private enum class WallType {
-        TOP
-        RIGHT
-        BOTTOM
-        LEFT
+    enum class WallType {
+        TOP,
+        RIGHT,
+        BOTTOM,
+        LEFT;
     }
 
 }

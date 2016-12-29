@@ -2,7 +2,7 @@ package lxx.strategy
 
 import lxx.model.BattleState
 
-trait Strategy {
+interface Strategy {
 
     fun matches(battleState: BattleState): Boolean
 

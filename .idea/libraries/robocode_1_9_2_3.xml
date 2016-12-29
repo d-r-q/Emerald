@@ -2,6 +2,15 @@
   <library name="robocode-1.9.2.3">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/robocode-1.9.2.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.core-1.9.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/codesize-1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/picocontainer-2.14.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.battle-1.9.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.host-1.9.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.repository-1.9.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.sound-1.9.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Robocode/libs/robocode.ui-1.9.2.5.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

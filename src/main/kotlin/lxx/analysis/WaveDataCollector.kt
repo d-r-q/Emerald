@@ -14,7 +14,7 @@ class WaveDataCollector<OUTPUT, DATA>(
         tree: KdTree<OUTPUT>,
         private val observerName: String,
         private val observableName: String,
-        private val waves: Stream<WaveWithOffset>
+        private val waves: Sequence<WaveWithOffset>
 ) : DataCollector<WaveWithOffset, OUTPUT, DATA>(locFormula, dataReconsturcor, tree) {
 
     override fun collectData(battleState: BattleState) {
@@ -25,7 +25,7 @@ class WaveDataCollector<OUTPUT, DATA>(
 
     }
 
-    protected override fun getLocation(battleState: BattleState) =
+    override fun getLocation(battleState: BattleState) =
             locFormula(battleState.robotByName(observerName), battleState.robotByName(observableName))
 
     protected fun paintWaves(time: Long, canvas: Canvas, waves: List<LxxWave>) {

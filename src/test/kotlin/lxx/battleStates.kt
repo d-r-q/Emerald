@@ -10,7 +10,7 @@ import lxx.model.LxxRobot
 
 class BattleStates {
 
-    class object {
+    companion object {
 
         fun defaultState() = BattleStates()
 
@@ -34,10 +34,10 @@ class BattleStates {
 }
 
 fun defaultBattleState(): BattleState {
-    val eventsSource = EventsSource<Event>()
+    val eventsSource = EventsSource<Any>()
     val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(robocodeEvents), stdRules, 0)
     val statusEvent = StatusEvent(RobotStatus(bodyHeading = 0.0, x = 0.0, y = 0.0))
-    statusEvent.setTime(3)
+    statusEvent.time = 3
     eventsSource.pushEvent(statusEvent)
     eventsSource.pushEvent(ScannedRobotEvent())
     return battleStateFactory.getNewState()

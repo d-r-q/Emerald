@@ -15,16 +15,16 @@ class Profile(
     private val drawHeight = 50.0
 
     private val histogram = DoubleArray(191)
-    private val smoothedHistogram = DoubleArray(histogram.size);
+    private val smoothedHistogram = DoubleArray(histogram.size)
 
-    {
+    init {
         data.forEach {
             val (bo, score) = it
             addScore(bo, score)
         }
     }
 
-    public fun addScore(bearingOffset: Double, score: Double) {
+    fun addScore(bearingOffset: Double, score: Double) {
         val idx = toIdx(bearingOffset)
         histogram[idx] += score
         val from = Math.max(0, idx - width)
@@ -36,10 +36,9 @@ class Profile(
         }
     }
 
-    public fun getBestBearingOffset(): Double {
+    fun getBestBearingOffset(): Double {
         val zeroOffsetIdx = histogram.size / 2
-        [suppress("UNUSED_VARIABLE")]
-        val bestIdxPair = smoothedHistogram.withIndices().maxBy {
+        val bestIdxPair = smoothedHistogram.withIndex().maxBy {
             val (idx, score) = it
             score
         }
@@ -50,19 +49,19 @@ class Profile(
         return toBearingOffset(bestIdx)
     }
 
-    public fun bearingOffsetDanger(bo: Double): Double = smoothedHistogram[toIdx(bo)]
+    fun bearingOffsetDanger(bo: Double): Double = smoothedHistogram[toIdx(bo)]
 
     private fun toIdx(bearingOffset: Double): Int {
 
         if (minBearingOffset == maxBearingOffset) {
-            return histogram.size / 2;
+            return histogram.size / 2
         }
 
         val idx = Math.round((bearingOffset - minBearingOffset) / (maxBearingOffset - minBearingOffset) * (histogram.size - 1)).toInt()
-        assert(idx >= 0 - 3, "Idx $idx is less than 0, bearingOffset=$bearingOffset, " +
-                "data.size=${histogram.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset")
-        assert(idx < histogram.size + 3, "Idx $idx is greater than ${histogram.size}, bearingOffset=$bearingOffset, " +
-                "data.size=${histogram.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset")
+        assert(idx >= 0 - 3, {"Idx $idx is less than 0, bearingOffset=$bearingOffset, " +
+                "data.size=${histogram.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset"})
+        assert(idx < histogram.size + 3, {"Idx $idx is greater than ${histogram.size}, bearingOffset=$bearingOffset, " +
+                "data.size=${histogram.size}, minBearingOffset=$minBearingOffset, maxBearingOffset=$maxBearingOffset"})
 
         return limit(0, idx, histogram.size - 1)
     }
@@ -70,7 +69,7 @@ class Profile(
     private fun toBearingOffset(idx: Int): Double =
             minBearingOffset + (idx.toDouble() / histogram.size.toDouble() ) * (maxBearingOffset - minBearingOffset)
 
-    public fun drawProfile(canvas: Canvas) {
+    fun drawProfile(canvas: Canvas) {
         if (canvas.enabled) {
 
             canvas.reset()

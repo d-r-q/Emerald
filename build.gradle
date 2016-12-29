@@ -3,13 +3,13 @@ apply plugin: 'kotlin'
 
 final rcAnnotationsDir = 'annotations/rc-runtime'
 
-version = '0.6.1'
+version = '0.6.2'
 group = 'lxx'
 
 jar.archiveName = "${group}.${name}_${version}.jar"
 
 buildscript {
-    ext.kotlin_version = '0.8.11'
+    ext.kotlin_version = '1.0.6'
     repositories {
         mavenCentral()
     }
@@ -48,8 +48,14 @@ task generateProperties << {
 }
 
 task copyKotlinRuntime << {
+    def configuration = project.configurations.getByName("compile")
+    def allDependencies = configuration.getResolvedConfiguration().getResolvedArtifacts().collect() {
+        return it.file
+    }
+    println(allDependencies)
     project.copy {
-        from(zipTree("lib/kotlin-runtime.jar"))
+        from(zipTree(allDependencies[1]))
+        from(zipTree(allDependencies[0]))
         into(sourceSets.main.output.classesDir)
     }
 }
@@ -74,10 +80,7 @@ sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
 }
 
-compileKotlin {
-    kotlinOptions.annotations = file(rcAnnotationsDir)
-}
 
-compileTestKotlin {
-    kotlinOptions.annotations = file(rcAnnotationsDir)
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.14'
 }

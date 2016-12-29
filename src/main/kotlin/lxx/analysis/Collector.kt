@@ -2,7 +2,7 @@ package lxx.analysis
 
 import lxx.model.BattleState
 
-trait Collector {
+interface Collector {
 
     fun collectData(battleState: BattleState)
 

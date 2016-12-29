@@ -1,11 +1,11 @@
 package lxx.util
 
 enum class LogLevel(val intLevel: Int) {
-    DEBUG : LogLevel(0)
-    INFO: LogLevel(1)
-    WARN: LogLevel(2)
-    ERROR: LogLevel(3)
-    OFF: LogLevel(4)
+    DEBUG(0),
+    INFO(1),
+    WARN(2),
+    ERROR(3),
+    OFF(4);
 }
 
 object Logger {
@@ -26,7 +26,7 @@ object Logger {
 
     fun log(level: LogLevel, message: () -> String, ex: Throwable? = null) {
         if (level.intLevel >= this.level.intLevel) {
-            println("[${level.toString()}] ${message()}")
+            println("[$level] ${message()}")
             ex?.printStackTrace()
         }
     }

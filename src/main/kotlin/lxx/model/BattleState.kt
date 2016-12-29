@@ -15,17 +15,17 @@ data class BattleState(val rules: BattleRules,
     private val maes: HashMap<Pair<LxxRobot, Int>, MaxEscapeAngle> = hashMapOf()
 
     fun robotByName(name: String) =
-            if (name.equals(me.name)) me
+            if (name == me.name) me
             else enemy
 
     fun opponentOf(robot: LxxRobot) = when {
-        robot identityEquals me -> enemy
-        robot identityEquals enemy -> me
+        robot === me -> enemy
+        robot === enemy -> me
         else -> throw IllegalArgumentException("Unknown robot $robot")
     }
 
     fun preciseMaxEscapeAngle(victim: LxxRobot, bulletSpeed: Double): MaxEscapeAngle {
-        assert(victim identityEquals me || victim identityEquals enemy, "Unknown robot $victim")
+        assert(victim === me || victim === enemy, {"Unknown robot $victim"})
         return maes.getOrPut(Pair(victim, (bulletSpeed * 10).toInt()), { preciseMaxEscapeAngle(opponentOf(victim), victim, bulletSpeed) })
     }
 

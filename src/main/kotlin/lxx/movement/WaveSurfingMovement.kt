@@ -24,8 +24,9 @@ import lxx.movement.mech.OrbitDestination
 import lxx.movement.mech.OrbitDirection
 import robocode.util.Utils
 import lxx.waves.RealWavesWatcher
+import lxx.waves.Wave
 
-public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Movement {
+class WaveSurfingMovement(battleRules: BattleRules) : Collector, Movement {
 
     private val orbMov = OrbitalMovementMech(battleRules.battleField, 300.0)
 
@@ -33,12 +34,12 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
 
     private val destinations: HashMap<LxxWave, Pair<PointLike, Profile>> = hashMapOf()
 
-    class object {
+    companion object {
 
         val tree = KdTree.SqrEuclid<Double>(5, 1200)
 
-        val locFormula = {(observer: LxxRobot, observable: LxxRobot) ->
-            doubleArray(observable.acceleration + 2 / 3 * 2,
+        val locFormula = { observer: LxxRobot, observable: LxxRobot ->
+            doubleArrayOf(observable.acceleration + 2 / 3 * 2,
                     abs(lateralVelocity(observer, observable)) / Rules.MAX_VELOCITY * 4,
                     advancingVelocity(observer, observable) / Rules.MAX_VELOCITY * 3,
                     observer.distance(observable) / 800,
@@ -57,7 +58,7 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
 
     override fun getMovementDecision(battleState: BattleState): MovementDecision {
         val wave = wavesWatcher.wavesInAir.
-                sortBy { it.flightTime(battleState.me) }.
+                sortedBy { it.flightTime(battleState.me) }.
                 firstOrNull { it.flightTime(battleState.me) > 3 }
 
         if (wave != null) {
@@ -87,7 +88,7 @@ public class WaveSurfingMovement(val battleRules: BattleRules) : Collector, Move
     override fun collectData(battleState: BattleState) {
         wavesWatcher.collectData(battleState)
         dataCollector.collectData(battleState)
-        passedWaves.forEach { destinations.remove(it) }
+        passedWaves.forEach { destinations.remove(it as Wave) }
     }
 
     private fun destination(currentState: BattleState, wave: LxxWave): Pair<PointLike, Profile> {

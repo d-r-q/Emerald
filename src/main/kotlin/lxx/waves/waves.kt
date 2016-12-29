@@ -1,36 +1,35 @@
 package lxx.waves
 
-import java.util.ArrayList
-import lxx.model.BattleState
-import robocode.util.Utils
-import robocode.Bullet
-import java.lang.Math.abs
-import lxx.model.LxxPoint
-import lxx.math.*
 import lxx.analysis.Collector
 import lxx.events.EventsSource
 import lxx.events.allEvents
+import lxx.math.RADIANS_180
+import lxx.model.BattleState
+import lxx.model.LxxPoint
 import lxx.model.LxxRobot
-import lxx.paint.Canvas
 import lxx.model.PointLike
-import lxx.util.Logger
+import lxx.paint.Canvas
 import lxx.rc.prettyString
+import lxx.util.Logger
+import robocode.Bullet
 import robocode.Rules
+import robocode.util.Utils
 import java.awt.Color
-import java.util.HashSet
+import java.lang.Math.abs
+import java.util.*
 
 class WavesWatcher(val attackerName: String,
                    val victimName: String,
                    val detectWave: (BattleState) -> LxxWave?) : Collector {
 
     var wavesInAir: List<LxxWave> = ArrayList()
-        get() = ArrayList($wavesInAir)
+        get() = ArrayList(field)
 
     private var wavesWithoutBullets = HashSet<Wave>()
 
     private val waveEventsSource = EventsSource<Wave>()
 
-    public override fun collectData(battleState: BattleState) {
+    override fun collectData(battleState: BattleState) {
         val (inAir, broken) = getBrokenWaves(battleState)
         wavesInAir = inAir
 
@@ -57,11 +56,11 @@ class WavesWatcher(val attackerName: String,
 
     }
 
-    public fun brokenWavesStream(): Stream<BrokenWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<BrokenWave>())
+    fun brokenWavesStream(): Sequence<BrokenWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(BrokenWave::class.java)
 
-    public fun hitWavesStream(): Stream<HitWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<HitWave>())
+    fun hitWavesStream(): Sequence<HitWave> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(HitWave::class.java)
 
-    public fun bulletsStream(): Stream<WaveWithOffset> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(javaClass<WaveWithOffset>()).
+    fun bulletsStream(): Sequence<WaveWithOffset> = waveEventsSource.getEventsStream(allEvents).filterIsInstance(WaveWithOffset::class.java).
             filter {
                 it is HitWave || it is BrokenWave && it.hasBullet
             }
@@ -87,7 +86,7 @@ class WavesWatcher(val attackerName: String,
             val wave = findWave(battleState.time, it) ?:
                     generateWave(battleState, it)
             if (wave != null) {
-                hitWaves += HitWave(wave, wave.toBearingOffset(it.getHeadingRadians()), it.getVictim() != null)
+                hitWaves += HitWave(wave, wave.toBearingOffset(it.headingRadians), it.victim != null)
                 wavesWithoutBullets.add(wave)
             }
         }
@@ -97,15 +96,15 @@ class WavesWatcher(val attackerName: String,
 
     private fun findWave(time: Long, bullet: Bullet): LxxWave? {
 
-        val lxxWave = wavesInAir.firstOrNull() {
+        val lxxWave = wavesInAir.firstOrNull {
 
-            val travelledDistanceThreshold = when (bullet.getVictim()) {
+            val travelledDistanceThreshold = when (bullet.victim) {
                 null -> it.speed * 2.1
-                else -> (it.speed + bullet.getVelocity()) * 1.1
+                else -> (it.speed + bullet.velocity) * 1.1
             }
 
-            Utils.isNear(it.speed, bullet.getVelocity()) &&
-                    abs(it.travelledDistance(time) - it.attacker.distance(bullet.getX(), bullet.getY())) < travelledDistanceThreshold
+            Utils.isNear(it.speed, bullet.velocity) &&
+                    abs(it.travelledDistance(time) - it.attacker.distance(bullet.x, bullet.y)) < travelledDistanceThreshold
         }
 
         return lxxWave
@@ -113,26 +112,24 @@ class WavesWatcher(val attackerName: String,
 
     private fun generateWave(battleState: BattleState, bullet: Bullet): LxxWave? {
         Logger.warn({ "Generate wave for bullet ${bullet.prettyString()}" })
-        val bulletSpeed = bullet.getVelocity()
-        val bulletReverseHeading = Utils.normalAbsoluteAngle(bullet.getHeadingRadians() + RADIANS_180)
-        var currentBulletPos = LxxPoint(bullet.getX(), bullet.getY())
+        val bulletSpeed = bullet.velocity
+        val bulletReverseHeading = Utils.normalAbsoluteAngle(bullet.headingRadians + RADIANS_180)
+        val currentBulletPos = LxxPoint(bullet.x, bullet.y)
 
-        val pastStates = stream(Pair<BattleState?, LxxPoint>(battleState, currentBulletPos), { Pair(it.first?.prevState, it.second.project(bulletReverseHeading, bulletSpeed)) })
-        [suppress("UNUSED_VARIABLE")]
+        val pastStates = generateSequence(Pair<BattleState?, LxxPoint>(battleState, currentBulletPos), { Pair(it.first?.prevState, it.second.project(bulletReverseHeading, bulletSpeed)) })
         val state = pastStates.takeWhile {
             val (state, bulletPos) = it
             if (state == null) {
                 false
             } else {
                 val nextBulletPos = bulletPos.project(bulletReverseHeading, bulletSpeed)
-                val attcker = state.robotByName(bullet.getName()!!)
+                val attcker = state.robotByName(bullet.name!!)
                 bulletPos.distance(attcker) > bulletSpeed &&
                         bulletPos.distance(attcker) > nextBulletPos.distance(attcker)
             }
-        }.
-                lastOrNull()
+        }.lastOrNull()
 
-        assert(state != null, "Could not find wave")
+        assert(state != null, { "Could not find wave" })
         return if (state != null && state.first != null) LxxWave(state.first!!, attackerName, victimName, bulletSpeed)
         else null
     }
@@ -140,7 +137,7 @@ class WavesWatcher(val attackerName: String,
 }
 
 fun RealWavesWatcher(observer: String, observable: String): WavesWatcher {
-    val realWavesDetector = {(bs: BattleState) ->
+    val realWavesDetector = { bs: BattleState ->
         val attacker = bs.robotByName(observer)
         if (attacker.firePower != null && attacker.firePower > 0.0) {
             LxxWave(bs.prevState!!, observer, observable, Rules.getBulletSpeed(attacker.firePower))
@@ -152,7 +149,7 @@ fun RealWavesWatcher(observer: String, observable: String): WavesWatcher {
     return WavesWatcher(observer, observable, realWavesDetector)
 }
 
-trait Wave : PointLike {
+interface Wave : PointLike {
 
     val time: Long
 
@@ -182,15 +179,16 @@ class VirtualWave(override val time: Long,
 }
 
 data class LxxWave(val battleState: BattleState,
-                   attackerName: String,
-                   victimName: String,
-                   override val speed: Double) : Wave {
+                   override val speed: Double,
+                   val attacker: LxxRobot,
+                   val victim: LxxRobot) : Wave {
 
-    val attacker = battleState.robotByName(attackerName)
-    val victim = battleState.robotByName(victimName)
+
+    constructor(battleState: BattleState, attackerName: String, victimName: String, speed: Double) :
+            this(battleState, speed, battleState.robotByName(attackerName), battleState.robotByName(victimName))
 
     override val time = battleState.time
-    override val center = attacker
+    override val center: PointLike = attacker
 
     val zeroBearingOffset = attacker.angleTo(victim)
 
@@ -218,15 +216,15 @@ abstract class WaveWithOffset(val wave: LxxWave, val offset: Double) : Wave by w
 
 }
 
-open data class BrokenWave(wave: LxxWave, robotOffset: Double, val hasBullet: Boolean) : WaveWithOffset(wave, robotOffset) {
+class BrokenWave(wave: LxxWave, robotOffset: Double, val hasBullet: Boolean) : WaveWithOffset(wave, robotOffset) {
 
-    override fun toString() = "BrokenWave(wave = ${wave.toString()}, offset = $offset)"
+    override fun toString() = "BrokenWave(wave = $wave, offset = $offset)"
 }
 
-data class HitWave(wave: LxxWave,
-                   bulletOffset: Double,
-                   val hitRobot: Boolean) : WaveWithOffset(wave, bulletOffset) {
+class HitWave(wave: LxxWave,
+              bulletOffset: Double,
+              val hitRobot: Boolean) : WaveWithOffset(wave, bulletOffset) {
 
-    override fun toString() = "HitWave(wave = ${wave.toString()}, offset = $offset)"
+    override fun toString() = "HitWave(wave = $wave, offset = $offset)"
 
 }

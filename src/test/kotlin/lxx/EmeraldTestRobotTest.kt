@@ -4,12 +4,10 @@ import org.junit.Test
 import robocode.StatusEvent
 import robocode.DeathEvent
 import lxx.math.*
-import kotlin.test.assertTrue
 import java.util.concurrent.CyclicBarrier
 
 class EmeraldTestRobotTest {
 
-    [Test]
     fun testTestRobot() {
         /*val barrier = CyclicBarrier(2)
         val robot = EmeraldTestRobot(barrier)

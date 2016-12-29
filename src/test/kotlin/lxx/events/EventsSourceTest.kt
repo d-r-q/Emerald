@@ -3,9 +3,9 @@ package lxx.events
 import org.junit.Test
 import org.junit.Assert
 
-public class EventsSourceTest {
+class EventsSourceTest {
 
-    [Test]
+    @Test
     fun logEventSourceShouldBeTraversableMultipleTimes() {
         val log = EventsSource<Int>()
         val source = log.getEventsStream(allEvents)
@@ -25,7 +25,7 @@ public class EventsSourceTest {
         Assert.assertTrue("Second pushed event sholud be found", found)
     }
 
-    [Test]
+    @Test
     fun pastEventsShouldBeLost() {
         val log = EventsSource<Int>()
         log.pushEvent(1)

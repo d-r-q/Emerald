@@ -31,7 +31,7 @@ import lxx.stat.Stat
 
 open class Emerald : AdvancedRobot() {
 
-    {
+    init {
         QuickMath.init()
     }
 
@@ -49,26 +49,26 @@ open class Emerald : AdvancedRobot() {
     }
 
     override fun run() {
-        if (getOthers() > 1) {
-            System.out.println(this.javaClass.getName() + " isn't support battles with more than 1 opponents")
+        if (others > 1) {
+            System.out.println(this.javaClass.name + " isn't support battles with more than 1 opponents")
             return
         }
 
         setColors(Color(0, 2, 1), Color(0x25, 0xFF, 0xC1), Color(0, 0, 0), Color(255, 255, 255), Color(255, 255, 255))
-        setAdjustGunForRobotTurn(true)
-        setAdjustRadarForGunTurn(true)
+        isAdjustGunForRobotTurn = true
+        isAdjustRadarForGunTurn = true
 
         do {
             setTurnRightRadians(java.lang.Double.POSITIVE_INFINITY)
             setTurnGunRightRadians(java.lang.Double.POSITIVE_INFINITY)
             setTurnRadarRightRadians(java.lang.Double.POSITIVE_INFINITY)
             execute()
-        } while (allEvents.firstOrNull() { it is ScannedRobotEvent } == null)
+        } while (allEvents.firstOrNull { it is ScannedRobotEvent } == null)
 
-        val battleField = BattleField(getBattleFieldWidth(), getBattleFieldHeight(), 18.0)
+        val battleField = BattleField(battleFieldWidth, battleFieldHeight, 18.0)
         val scannedRobotEvent = allEvents.firstOrNull { it is ScannedRobotEvent } as ScannedRobotEvent
-        val battleRules = BattleRules(battleField, getWidth(), getHeight(), getGunCoolingRate(), getEnergy(),
-                getName()!!, scannedRobotEvent.getName()!!)
+        val battleRules = BattleRules(battleField, width, height, gunCoolingRate, energy,
+                name!!, scannedRobotEvent.name!!)
 
         impl(battleRules).run()
     }
@@ -78,7 +78,7 @@ open class Emerald : AdvancedRobot() {
         private val strategies: List<Strategy>
         private val collectors: List<Collector>
 
-        {
+        init {
             val myWavesWatcher = RealWavesWatcher(battleRules.myName, battleRules.enemyName)
 
             val debugger = object : Debugger {
@@ -100,7 +100,7 @@ open class Emerald : AdvancedRobot() {
 
         private val eventsSource = EventsSource<Event>()
 
-        private val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(lxx.events.allEvents), battleRules, getTime())
+        private val battleStateFactory = BattleStateFactory(eventsSource.getEventsStream(lxx.events.allEvents), battleRules, time)
 
         fun run() {
 
@@ -128,7 +128,7 @@ open class Emerald : AdvancedRobot() {
                         setColors(Color.BLACK, Color.BLACK, Color.BLACK)
                     }
 
-                    val strategy = strategies.firstOrNull() { it.matches(newState) }
+                    val strategy = strategies.firstOrNull { it.matches(newState) }
 
                     if (strategy == null) {
                         throw AssertionError("Could not find strategy for state $newState")
@@ -140,12 +140,12 @@ open class Emerald : AdvancedRobot() {
                     handleGun(turnDecision)
 
                     paintEventsSource.any { g ->
-                        val graphics = LxxGraphics(getGraphics()!!)
+                        val graphics = LxxGraphics(graphics!!)
                         Canvas.values().forEach { it.draw(graphics) }
                         true
                     }
                 } catch (t: Throwable) {
-                    System.err.println("Time: " + getTime())
+                    System.err.println("Time: " + time)
                     t.printStackTrace()
                 }
 
@@ -163,7 +163,7 @@ open class Emerald : AdvancedRobot() {
         }
 
         private fun handleGun(turnDecision: TurnDecision): Unit {
-            if (turnDecision.firePower == 0.0 || getGunHeat() > 0 || Math.abs(getGunTurnRemaining()) > 1) {
+            if (turnDecision.firePower == 0.0 || gunHeat > 0 || Math.abs(gunTurnRemaining) > 1) {
                 aimGun(turnDecision)
                 return
             }

@@ -8,19 +8,19 @@ import robocode.util.Utils.*
 import lxx.math.*
 import lxx.waves.Wave
 
-public enum class OrbitDirection(val direction: Int, val speed: Int) {
+enum class OrbitDirection(val direction: Int, val speed: Int) {
 
-    CLOCKWISE : OrbitDirection(1, 24)
-    COUNTER_CLOCKWISE : OrbitDirection(-1, 24)
-    STOP : OrbitDirection(0, 0)
+    CLOCKWISE(1, 24),
+    COUNTER_CLOCKWISE(-1, 24),
+    STOP(0, 0);
 
 }
 
-public data class OrbitDestination(val center: PointLike, val direction: OrbitDirection)
+data class OrbitDestination(val center: PointLike, val direction: OrbitDirection)
 
-public class OrbitalMovementMech(val battleField: BattleField, val desiredDistance: Double) : MovementMechanics<OrbitDestination> {
+class OrbitalMovementMech(val battleField: BattleField, val desiredDistance: Double) : MovementMechanics<OrbitDestination> {
 
-    public override fun getMovementDecision(me: LxxRobot, destination: OrbitDestination): MovementDecision {
+    override fun getMovementDecision(me: LxxRobot, destination: OrbitDestination): MovementDecision {
         val desiredHeading: Double
         val smoothedHeading: Double
         if (destination.direction.speed != 0) {
@@ -46,17 +46,17 @@ public class OrbitalMovementMech(val battleField: BattleField, val desiredDistan
 
 fun futurePositions(initState: LxxRobot, wave: Wave, desiredDistance: Double): Pair<List<PointLike>, List<PointLike>> {
     val orbMech = OrbitalMovementMech(initState.battleRules.battleField, desiredDistance)
-    val cwPos = stream(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.CLOCKWISE), orbMech)).
+    val cwPos = generateSequence(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.CLOCKWISE), orbMech)).
             takeWhile{!wave.isReached(it)}.
             toList()
-    val ccwPos = stream(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.COUNTER_CLOCKWISE), orbMech)).
+    val ccwPos = generateSequence(initState, pointsGenerator(OrbitDestination(wave, OrbitDirection.COUNTER_CLOCKWISE), orbMech)).
             takeWhile {!wave.isReached(it)}.
             toList()
 
     return Pair(cwPos, ccwPos)
 }
 
-fun pointsGenerator(orbitDestination: OrbitDestination, orbMov: OrbitalMovementMech) = {(robot: LxxRobot) ->
+fun pointsGenerator(orbitDestination: OrbitDestination, orbMov: OrbitalMovementMech) = {robot: LxxRobot ->
     val movementDecision = orbMov.getMovementDecision(robot, orbitDestination)
     robot.apply(movementDecision)
 }

@@ -28,9 +28,9 @@ fun RobotStatus(
         numRounds: Int = -1,
         time: Long = -1L
 ): RobotStatus {
-    val javaClass = javaClass<RobotStatus>()
-    val constructor = javaClass.getDeclaredConstructors().firstOrNull() { it.getParameterTypes()!!.size == 17 }
-    constructor!!.setAccessible(true)
+    val javaClass = RobotStatus::class.java
+    val constructor = javaClass.declaredConstructors.firstOrNull { it.parameterTypes!!.size == 17 }
+    constructor!!.isAccessible = true
     x.isNaN()
     return constructor.newInstance(
             energy, x, y, bodyHeading, gunHeading, radarHeading, velocity, bodyTurnRemaining, radarTurnRemaining,

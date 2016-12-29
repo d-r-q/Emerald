@@ -1,6 +1,6 @@
 package lxx.util
 
-public trait Debugger {
+interface Debugger {
 
     fun debugProperty(name: String, value: Double?) {
         debugProperty(name, java.lang.String.format("%.2f", value))

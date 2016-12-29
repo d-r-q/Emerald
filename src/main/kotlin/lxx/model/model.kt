@@ -52,11 +52,11 @@ fun preciseMaxEscapeAngle(attackerPos: PointLike, victim: LxxRobot, bulletSpeed:
 
     val res =
             if (lateralDirection >= 0) {
-                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.last ?: victim) - zeroBearingOffset),
-                        Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.last ?: victim) - zeroBearingOffset))
+                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.lastOrNull() ?: victim) - zeroBearingOffset),
+                        Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.lastOrNull() ?: victim) - zeroBearingOffset))
             } else {
-                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.last ?: victim) - zeroBearingOffset),
-                        Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.last ?: victim) - zeroBearingOffset))
+                MaxEscapeAngle(Utils.normalRelativeAngle(attackerPos.angleTo(cwPoints.lastOrNull() ?: victim) - zeroBearingOffset),
+                        Utils.normalRelativeAngle(attackerPos.angleTo(ccwPoints.lastOrNull() ?: victim) - zeroBearingOffset))
             }
 
     return res
