@@ -157,7 +157,11 @@ data class LxxRobotBuilder(
         val expectedEnergy = prevState.energy - takenDamage - wallDamage(battleRules) + givenDamage
         val energyDiff = expectedEnergy - energy
         if (energyDiff < 0.1) {
-            return 0.0
+            if (energyDiff >0.09) {
+                return 0.1
+            } else {
+                return 0.0
+            }
         }
         if (energy < expectedEnergy) {
             Logger.debug({ "$name fire with power ${energyDiff}" })
