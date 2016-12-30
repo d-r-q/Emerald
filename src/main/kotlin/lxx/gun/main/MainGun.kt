@@ -32,7 +32,7 @@ class MainGun(private val myName: String,
         val tree = KdTree.SqrEuclid<Double>(5, 1200)
 
         val locFormula = {observer: LxxRobot, observable: LxxRobot ->
-            doubleArrayOf(observable.acceleration + 2 / 3 * 2,
+            doubleArrayOf((observable.acceleration + 2) / 3 * 2,
                     abs(lateralVelocity(observer, observable)) / Rules.MAX_VELOCITY * 4,
                     advancingVelocity(observer, observable) / Rules.MAX_VELOCITY * 3,
                     observer.distance(observable) / 800,
